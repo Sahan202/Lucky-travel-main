@@ -1,0 +1,125 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root { min-height: 100%; }
+body { margin: 0; background: #020817; }
+* { scrollbar-width: thin; scrollbar-color: rgba(34, 211, 238, .3) transparent; }
+*::-webkit-scrollbar { width: 8px; height: 8px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb { background: rgba(34, 211, 238, .22); border-radius: 999px; }
+.dark .dashboard-main { background-image: radial-gradient(circle at 85% 5%, rgba(34, 211, 238, .05), transparent 30%); }
+
+/* Shared manager-page design system */
+.manager-page { max-width: 1500px; margin-left: auto; margin-right: auto; }
+.manager-page > div,
+.manager-page > form { transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease; }
+.manager-page h2 { letter-spacing: -.025em; }
+.manager-page h2::after {
+  content: '';
+  display: block;
+  width: 42px;
+  height: 3px;
+  margin-top: 12px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #22d3ee, #2dd4bf);
+}
+.manager-page input:not([type='file']),
+.manager-page textarea,
+.manager-page select {
+  border-radius: 14px !important;
+  outline: none;
+  transition: border-color .2s ease, box-shadow .2s ease, background .2s ease;
+}
+.manager-page input:not([type='file']):focus,
+.manager-page textarea:focus,
+.manager-page select:focus {
+  border-color: #22d3ee !important;
+  box-shadow: 0 0 0 3px rgba(34, 211, 238, .12) !important;
+}
+.manager-page input[type='file'] {
+  cursor: pointer;
+  border-radius: 14px !important;
+}
+.manager-page input[type='file']::file-selector-button {
+  margin-right: 14px;
+  border: 0;
+  border-radius: 10px;
+  padding: 8px 12px;
+  background: rgba(34, 211, 238, .12);
+  color: #0891b2;
+  font-weight: 700;
+  cursor: pointer;
+}
+.manager-page button,
+.manager-page a { transition: transform .18s ease, background-color .18s ease, border-color .18s ease, opacity .18s ease; }
+.manager-page button:active,
+.manager-page a:active { transform: scale(.97); }
+.manager-page .bg-gray-900,
+.manager-page .dark\:bg-gray-700 { background-color: #22d3ee !important; color: #03111d !important; font-weight: 700; }
+.manager-page .bg-blue-600 { background-color: #0891b2 !important; }
+.manager-page .bg-red-600 { background-color: rgba(244, 63, 94, .12) !important; color: #fb7185 !important; border: 1px solid rgba(244, 63, 94, .18); }
+.manager-page img { background-color: rgba(148, 163, 184, .08); }
+.manager-page table tbody tr { transition: background-color .18s ease; }
+
+.dark .manager-page .dark\:bg-gray-800 {
+  background-color: #081321 !important;
+  border-color: rgba(255, 255, 255, .07) !important;
+  box-shadow: 0 16px 50px rgba(0, 0, 0, .12) !important;
+}
+.dark .manager-page .dark\:bg-gray-900,
+.dark .manager-page .dark\:bg-gray-900\/50 {
+  background-color: rgba(255, 255, 255, .035) !important;
+}
+.dark .manager-page .dark\:border-gray-700,
+.dark .manager-page .dark\:border-gray-600 { border-color: rgba(255, 255, 255, .08) !important; }
+.dark .manager-page input:not([type='file']),
+.dark .manager-page textarea,
+.dark .manager-page select {
+  background-color: rgba(255, 255, 255, .035) !important;
+  border-color: rgba(255, 255, 255, .09) !important;
+  color: #f8fafc !important;
+}
+.dark .manager-page input::placeholder,
+.dark .manager-page textarea::placeholder { color: #64748b; }
+.dark .manager-page input[type='file']::file-selector-button { color: #67e8f9; }
+.dark .manager-page .dark\:divide-gray-700 > :not([hidden]) ~ :not([hidden]) { border-color: rgba(255, 255, 255, .06) !important; }
+.dark .manager-page table thead { background-color: rgba(255, 255, 255, .025) !important; }
+.dark .manager-page table tbody tr:hover { background-color: rgba(34, 211, 238, .035) !important; }
+
+@media (min-width: 768px) {
+  .manager-page form.space-y-4 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+  .manager-page form.space-y-4 > * { margin-top: 0 !important; }
+  .manager-page form.space-y-4 > textarea,
+  .manager-page form.space-y-4 > button,
+  .manager-page form.space-y-4 > .grid { grid-column: 1 / -1; }
+  .manager-page form.space-y-4 > textarea { min-height: 108px; }
+}
+/* Success Message Animations */
+@keyframes slide-in {
+  0% {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes progress {
+  0% {
+    width: 0%;
+  }
+  100% {
+    width: 100%;
+  }
+}
+
+.animate-slide-in {
+  animation: slide-in 0.5s ease-out;
+}
+
+.animate-progress {
+  animation: progress 4s linear;
+}

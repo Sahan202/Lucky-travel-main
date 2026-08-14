@@ -1,0 +1,22 @@
+# Secrets
+**/.env
+**/.env.*
+!**/.env.example
+
+# Dependencies and build outputs
+**/node_modules/
+**/dist/
+**/.yarn/
+**/*.log
+
+# Videos are delivered from Cloudinary and must not be committed to GitHub
+**/*.mp4
+
+# Preserved repository metadata
+**/.git-backup/
+
+# Editor and operating-system files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

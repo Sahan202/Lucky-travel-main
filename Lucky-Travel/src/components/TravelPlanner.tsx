@@ -1,0 +1,150 @@
+import { FormEvent, useState } from 'react';
+import { CalendarDays, LoaderCircle, MapPin, Sparkles, Users } from 'lucide-react';
+import SriLankaDestinationMap from './SriLankaDestinationMap';
+import AIActivityFinder from './AIActivityFinder';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const interestOptions = ['Beaches', 'Nature', 'Wildlife', 'Culture'];
+
+type PackageRecommendation = {
+  id: string;
+  name: string;
+  price: string;
+  duration: string;
+};
+
+type ItineraryDay = {
+  day: number;
+  title: string;
+  activities: string[];
+  overnight?: string;
+};
+
+type PlannerResult = {
+  itinerary: {
+    title: string;
+    summary: string;
+    estimatedCost: string;
+    recommendedPackage?: PackageRecommendation | string | null;
+    stays?: { location: string; nights: number; selectedPlaces?: string[] }[];
+    days: ItineraryDay[];
+    note?: string;
+  };
+  recommendations: PackageRecommendation[];
+  aiPowered: boolean;
+};
+
+export default function TravelPlanner() {
+  const [form, setForm] = useState({
+    budget: '', startDate: '', endDate: '', travellers: '2', preferredHotels: 'Comfort',
+    startingLocation: 'Bandaranaike International Airport', language: 'English'
+  });
+  const [interests, setInterests] = useState<string[]>(['Beaches']);
+  const [selectedDestinations, setSelectedDestinations] = useState<string[]>([]);
+  const [selectedActivities, setSelectedActivities] = useState<string[]>([]);
+  const [result, setResult] = useState<PlannerResult | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const update = (field: string, value: string) => setForm(previous => ({ ...previous, [field]: value }));
+  const toggleInterest = (interest: string) => setInterests([interest]);
+  const toggleDestination = (destination: string) => setSelectedDestinations(previous =>
+    previous.includes(destination) ? previous.filter(item => item !== destination) : [...previous, destination]
+  );
+  const toggleActivity = (activity: string) => setSelectedActivities(previous => previous.includes(activity) ? previous.filter(item => item !== activity) : [...previous, activity]);
+
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
+    setLoading(true);
+    setError('');
+    setResult(null);
+    try {
+      const response = await fetch(`${API_URL}/api/ai/planner`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...form, interests, selectedDestinations, selectedActivities, travellers: Number(form.travellers), budget: Number(form.budget) })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'Unable to create your itinerary.');
+      setResult(data);
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : 'Unable to create your itinerary.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <section id="ai-planner" className="relative overflow-hidden bg-slate-950 px-6 py-24 text-white">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.25),transparent_35%),radial-gradient(circle_at_bottom_right,rgba(168,85,247,0.18),transparent_35%)]" />
+      <div className="relative mx-auto max-w-7xl">
+        <div className="mx-auto mb-12 max-w-3xl text-center">
+          <span className="mb-4 inline-flex items-center gap-2 rounded-full border border-cyan-400/30 bg-cyan-400/10 px-4 py-2 text-sm text-cyan-200">
+            <Sparkles size={16} /> AI Travel Planner
+          </span>
+          <h2 className="text-4xl font-bold md:text-5xl">Build your perfect Sri Lanka journey</h2>
+          <p className="mt-4 text-slate-300">Tell us what you love. We will match your preferences with Lucky Travel packages and create a day-by-day plan.</p>
+        </div>
+
+        <div className="mb-6 flex flex-wrap justify-center gap-3">
+          {interestOptions.map(interest => (
+            <button key={interest} type="button" onClick={() => toggleInterest(interest)} className={`rounded-full px-5 py-2.5 text-sm font-semibold transition ${interests.includes(interest) ? 'bg-cyan-400 text-slate-950 shadow-lg shadow-cyan-500/20' : 'border border-white/15 bg-white/5 text-slate-300 hover:bg-white/10'}`}>{interest}</button>
+          ))}
+        </div>
+
+        <SriLankaDestinationMap activeInterests={interests} selected={selectedDestinations} onToggle={toggleDestination} onCategoryChange={category => setInterests([category])} />
+        <AIActivityFinder destinations={selectedDestinations} selected={selectedActivities} onToggle={toggleActivity} onDestinationToggle={toggleDestination} language={form.language} />
+
+        <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr]">
+          <form onSubmit={submit} className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-2xl backdrop-blur md:p-8">
+            <div className="grid gap-5 sm:grid-cols-2">
+              <label className="text-sm text-slate-200">Budget (USD)
+                <input required min="50" type="number" value={form.budget} onChange={e => update('budget', e.target.value)} placeholder="650" className="mt-2 w-full rounded-xl border border-white/15 bg-white/10 px-4 py-3 text-white outline-none focus:border-cyan-400" />
+              </label>
+              <label className="text-sm text-slate-200">Travellers
+                <div className="relative mt-2"><Users className="absolute left-3 top-3.5 text-slate-400" size={18} /><input required min="1" max="30" type="number" value={form.travellers} onChange={e => update('travellers', e.target.value)} className="w-full rounded-xl border border-white/15 bg-white/10 py-3 pl-10 pr-4 text-white outline-none focus:border-cyan-400" /></div>
+              </label>
+              <label className="text-sm text-slate-200">Start date
+                <div className="relative mt-2"><CalendarDays className="absolute left-3 top-3.5 text-slate-400" size={18} /><input required type="date" value={form.startDate} onChange={e => update('startDate', e.target.value)} className="w-full rounded-xl border border-white/15 bg-white/10 py-3 pl-10 pr-3 text-white [color-scheme:dark] outline-none focus:border-cyan-400" /></div>
+              </label>
+              <label className="text-sm text-slate-200">End date
+                <input required min={form.startDate} type="date" value={form.endDate} onChange={e => update('endDate', e.target.value)} className="mt-2 w-full rounded-xl border border-white/15 bg-white/10 px-4 py-3 text-white [color-scheme:dark] outline-none focus:border-cyan-400" />
+              </label>
+              <label className="text-sm text-slate-200">Preferred hotel
+                <select value={form.preferredHotels} onChange={e => update('preferredHotels', e.target.value)} className="mt-2 w-full rounded-xl border border-white/15 bg-slate-900 px-4 py-3 text-white outline-none focus:border-cyan-400">
+                  <option>Budget</option><option>Comfort</option><option>Luxury</option><option>Boutique</option>
+                </select>
+              </label>
+              <label className="text-sm text-slate-200">Response language
+                <select value={form.language} onChange={e => update('language', e.target.value)} className="mt-2 w-full rounded-xl border border-white/15 bg-slate-900 px-4 py-3 text-white outline-none focus:border-cyan-400">
+                  <option>English</option><option>Sinhala</option><option>Tamil</option>
+                </select>
+              </label>
+            </div>
+            <label className="mt-5 block text-sm text-slate-200">Starting location
+              <div className="relative mt-2"><MapPin className="absolute left-3 top-3.5 text-slate-400" size={18} /><input required value={form.startingLocation} onChange={e => update('startingLocation', e.target.value)} className="w-full rounded-xl border border-white/15 bg-white/10 py-3 pl-10 pr-4 text-white outline-none focus:border-cyan-400" /></div>
+            </label>
+            {error && <p className="mt-5 rounded-xl bg-red-500/15 p-3 text-sm text-red-200">{error}</p>}
+            <button disabled={loading || interests.length === 0 || selectedDestinations.length === 0} className="mt-7 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-400 to-blue-500 px-5 py-3.5 font-bold text-slate-950 transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-60">
+              {loading ? <><LoaderCircle className="animate-spin" size={19} /> Creating your journey...</> : <><Sparkles size={19} /> Generate itinerary</>}
+            </button>
+            {selectedDestinations.length === 0 && <p className="mt-2 text-center text-xs text-slate-400">Select at least one destination from the map.</p>}
+          </form>
+
+          <div className="min-h-[500px] rounded-3xl border border-white/10 bg-white p-6 text-slate-800 shadow-2xl md:p-8">
+            {!result && <div className="flex h-full min-h-[430px] flex-col items-center justify-center text-center"><div className="mb-5 rounded-full bg-cyan-50 p-5 text-cyan-600"><MapPin size={38} /></div><h3 className="text-2xl font-bold">Your itinerary will appear here</h3><p className="mt-2 max-w-md text-slate-500">Complete the form to receive a day-by-day route, estimated cost, and package recommendations.</p></div>}
+            {result && <div>
+              <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-sm font-semibold uppercase tracking-wider text-cyan-600">Personalized journey</p><h3 className="mt-1 text-3xl font-bold">{result.itinerary.title}</h3></div><span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">{result.aiPowered ? 'AI generated' : 'Smart match'}</span></div>
+              <p className="mt-3 text-slate-600">{result.itinerary.summary}</p>
+              <div className="my-6 rounded-2xl bg-slate-950 p-5 text-white"><p className="text-sm text-slate-400">Estimated cost</p><p className="mt-1 text-2xl font-bold text-cyan-300">{result.itinerary.estimatedCost}</p></div>
+              {result.itinerary.stays && result.itinerary.stays.length > 0 && <div className="mb-7"><h4 className="text-lg font-bold">Your overnight plan</h4><div className="mt-3 grid gap-3 sm:grid-cols-2">{result.itinerary.stays.map(stay => <div key={stay.location} className="rounded-xl border border-cyan-100 bg-cyan-50 p-4"><div className="flex items-center justify-between"><span className="font-bold text-slate-900">{stay.location}</span><span className="rounded-full bg-cyan-600 px-3 py-1 text-xs font-bold text-white">{stay.nights} {stay.nights === 1 ? 'night' : 'nights'}</span></div>{stay.selectedPlaces && stay.selectedPlaces.length > 0 && <p className="mt-2 text-xs text-slate-500">For: {stay.selectedPlaces.join(', ')}</p>}</div>)}</div></div>}
+              <div className="space-y-4">{result.itinerary.days?.map(day => <div key={day.day} className="relative border-l-2 border-cyan-200 pl-6"><span className="absolute -left-3 top-0 flex h-6 w-6 items-center justify-center rounded-full bg-cyan-500 text-xs font-bold text-white">{day.day}</span><h4 className="text-lg font-bold">Day {day.day} — {day.title}</h4><ul className="mt-2 space-y-1 text-sm text-slate-600">{day.activities?.map(activity => <li key={activity}>• {activity}</li>)}</ul>{day.overnight && <p className="mt-2 text-xs font-semibold text-cyan-700">Overnight: {day.overnight}</p>}</div>)}</div>
+              {result.recommendations.length > 0 && <div className="mt-7"><h4 className="text-lg font-bold">Recommended packages</h4><div className="mt-3 grid gap-3 sm:grid-cols-2">{result.recommendations.slice(0, 2).map(item => <a key={item.id} href={`/tour/${item.id}`} className="rounded-xl border border-slate-200 p-4 transition hover:border-cyan-400"><p className="font-bold">{item.name}</p><p className="mt-1 text-sm text-cyan-700">{item.duration} · {item.price}</p></a>)}</div></div>}
+              {result.itinerary.note && <p className="mt-6 text-xs text-slate-500">{result.itinerary.note}</p>}
+            </div>}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
