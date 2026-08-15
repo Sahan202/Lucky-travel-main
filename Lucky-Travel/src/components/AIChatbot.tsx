@@ -5,6 +5,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 type Language = 'English' | 'Sinhala' | 'Tamil';
 type Recommendation = { id: string; name: string; price: string; duration: string };
 type Message = { role: 'user' | 'assistant'; content: string; recommendations?: Recommendation[]; whatsappUrl?: string; requestedField?: string | null };
+type BookingStatus = 'pending' | 'contacted' | 'confirmed' | 'completed' | 'cancelled';
 
 const welcomes: Record<Language, string> = {
   English: 'Ayubowan! I can find packages, answer Sri Lanka travel questions, and help with bookings.',
@@ -16,6 +17,30 @@ const calendarCopy: Record<Language, { title: string; hint: string; button: stri
   English: { title: 'Choose your travel date', hint: 'Select your preferred departure date', button: 'Confirm travel date' },
   Sinhala: { title: 'ඔබගේ ගමන් දිනය තෝරන්න', hint: 'ඔබ කැමති පිටත්වීමේ දිනය තෝරන්න', button: 'ගමන් දිනය තහවුරු කරන්න' },
   Tamil: { title: 'உங்கள் பயணத் தேதியைத் தேர்ந்தெடுக்கவும்', hint: 'நீங்கள் விரும்பும் புறப்படும் தேதியைத் தேர்ந்தெடுக்கவும்', button: 'பயணத் தேதியை உறுதிப்படுத்தவும்' }
+};
+
+const statusCopy: Record<Language, Record<BookingStatus, (destination: string) => string>> = {
+  English: {
+    pending: destination => `Your ${destination || 'travel'} booking request has been received. Our team will review it shortly.`,
+    contacted: destination => `Our travel team has started following up on your ${destination || 'travel'} booking request. Please check your phone or WhatsApp.`,
+    confirmed: destination => `Great news! Your ${destination || 'travel'} booking has been confirmed by Lucky Travel.`,
+    completed: destination => `Your ${destination || 'travel'} booking has been marked as completed. Thank you for choosing Lucky Travel!`,
+    cancelled: destination => `Your ${destination || 'travel'} booking has been cancelled. Contact us if you would like to make a new arrangement.`
+  },
+  Sinhala: {
+    pending: destination => `ඔබගේ ${destination || 'සංචාර'} booking request එක ලැබී ඇත. අපගේ team එක ඉක්මනින් එය පරීක්ෂා කරනු ඇත.`,
+    contacted: destination => `ඔබගේ ${destination || 'සංචාර'} booking request එක ගැන අපගේ travel team එක කටයුතු ආරම්භ කර ඇත. Phone හෝ WhatsApp පරීක්ෂා කරන්න.`,
+    confirmed: destination => `සුභ ආරංචියක්! ඔබගේ ${destination || 'සංචාර'} booking එක Lucky Travel විසින් තහවුරු කර ඇත.`,
+    completed: destination => `ඔබගේ ${destination || 'සංචාර'} booking එක completed ලෙස සටහන් කර ඇත. Lucky Travel තෝරාගැනීම ගැන ස්තුතියි!`,
+    cancelled: destination => `ඔබගේ ${destination || 'සංචාර'} booking එක අවලංගු කර ඇත. අලුත් arrangement එකක් සඳහා අපව සම්බන්ධ කරගන්න.`
+  },
+  Tamil: {
+    pending: destination => `உங்கள் ${destination || 'பயண'} booking கோரிக்கை பெறப்பட்டது. எங்கள் குழு விரைவில் அதைப் பரிசீலிக்கும்.`,
+    contacted: destination => `உங்கள் ${destination || 'பயண'} booking கோரிக்கையை எங்கள் பயணக் குழு கவனிக்கத் தொடங்கியுள்ளது. Phone அல்லது WhatsApp-ஐ பார்க்கவும்.`,
+    confirmed: destination => `நல்ல செய்தி! உங்கள் ${destination || 'பயண'} booking Lucky Travel மூலம் உறுதிப்படுத்தப்பட்டது.`,
+    completed: destination => `உங்கள் ${destination || 'பயண'} booking completed எனக் குறிக்கப்பட்டுள்ளது. Lucky Travel-ஐ தேர்ந்தெடுத்ததற்கு நன்றி!`,
+    cancelled: destination => `உங்கள் ${destination || 'பயண'} booking ரத்து செய்யப்பட்டது. புதிய ஏற்பாட்டிற்கு எங்களைத் தொடர்புகொள்ளவும்.`
+  }
 };
 
 export default function AIChatbot() {
@@ -45,6 +70,34 @@ export default function AIChatbot() {
   useEffect(() => {
     if (!isDateRequested) setSelectedDate('');
   }, [isDateRequested]);
+
+  useEffect(() => {
+    if (!open) return;
+    let active = true;
+    const storageKey = `luckyTravelBookingStatus:${sessionId}`;
+    const visibleStatuses: BookingStatus[] = ['pending', 'contacted', 'confirmed', 'completed', 'cancelled'];
+
+    const checkBookingStatus = async () => {
+      try {
+        const response = await fetch(`${API_URL}/api/ai/booking-status/${encodeURIComponent(sessionId)}`);
+        if (!response.ok || !active) return;
+        const data = await response.json();
+        if (!data.found || !visibleStatuses.includes(data.status)) return;
+
+        const updateKey = `${data.status}:${data.statusUpdatedAt || ''}`;
+        if (localStorage.getItem(storageKey) === updateKey) return;
+        localStorage.setItem(storageKey, updateKey);
+        const status = data.status as BookingStatus;
+        setMessages(previous => [...previous, { role: 'assistant', content: statusCopy[language][status](data.destination || '') }]);
+      } catch {
+        // A temporary status check failure should not interrupt the chat.
+      }
+    };
+
+    void checkBookingStatus();
+    const interval = window.setInterval(checkBookingStatus, 12000);
+    return () => { active = false; window.clearInterval(interval); };
+  }, [open, sessionId, language]);
   const changeLanguage = (next: Language) => {
     setLanguage(next);
     setMessages([{ role: 'assistant', content: welcomes[next] }]);

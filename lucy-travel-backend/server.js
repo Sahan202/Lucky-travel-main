@@ -144,7 +144,7 @@ app.put('/api/chatbot-bookings/:id/status', verifyToken, async (req, res) => {
     const { ObjectId } = require('mongodb');
     const result = await db.collection('chatbotBookings').findOneAndUpdate(
       { _id: new ObjectId(req.params.id) },
-      { $set: { status: req.body.status, updatedAt: new Date() } },
+      { $set: { status: req.body.status, statusUpdatedAt: new Date(), updatedAt: new Date() } },
       { returnDocument: 'after' }
     );
     if (!result) return res.status(404).json({ message: 'Booking not found' });

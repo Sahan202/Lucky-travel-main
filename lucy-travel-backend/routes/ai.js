@@ -6,6 +6,32 @@ const WHATSAPP_NUMBER = process.env.WHATSAPP_NUMBER || '94741105548';
 
 const cleanText = value => String(value ?? '').trim();
 
+router.get('/booking-status/:sessionId', async (req, res) => {
+  try {
+    const sessionId = cleanText(req.params.sessionId);
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(sessionId)) {
+      return res.status(400).json({ message: 'Invalid booking session.' });
+    }
+    if (mongoose.connection.readyState !== 1) return res.status(503).json({ message: 'Database not connected.' });
+
+    const booking = await mongoose.connection.db.collection('chatbotBookings').findOne(
+      { sessionId },
+      { projection: { status: 1, statusUpdatedAt: 1, updatedAt: 1, 'bookingDetails.destination': 1 } }
+    );
+    if (!booking) return res.json({ found: false });
+
+    res.json({
+      found: true,
+      status: booking.status || 'collecting',
+      destination: booking.bookingDetails?.destination || '',
+      statusUpdatedAt: booking.statusUpdatedAt || null
+    });
+  } catch (error) {
+    console.error('Chatbot booking status lookup error:', error);
+    res.status(500).json({ message: 'Unable to load booking status.' });
+  }
+});
+
 const getPackages = async () => {
   if (mongoose.connection.readyState !== 1) return [];
   return mongoose.connection.db
