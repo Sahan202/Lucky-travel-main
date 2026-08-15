@@ -6,16 +6,35 @@ import bgImage from "../assets/hendrik-cornelissen-jpTT_SAU034-unsplash.jpg";
 
 gsap.registerPlugin(ScrollTrigger);
 interface TestimonialItem { _id?: string; name: string; role: string; text: string; rating: number; }
+type OnlinePhoto = { url: string; source: string };
+const sceneTitles = ["Ella, Sri Lanka", "Sigiriya", "Mirissa", "Yala National Park", "Temple of the Tooth"];
 
 export default function Testimonial() {
   const root = useRef<HTMLElement>(null);
   const story = useRef<HTMLDivElement>(null);
+  const background = useRef<HTMLImageElement>(null);
+  const glow = useRef<HTMLDivElement>(null);
   const [reviews, setReviews] = useState<TestimonialItem[]>([]);
   const [active, setActive] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [backgrounds, setBackgrounds] = useState<Record<number, OnlinePhoto>>({});
 
   useEffect(() => {
     fetch(`${import.meta.env.VITE_API_URL}/api/reviews`).then(response => response.json()).then(data => setReviews(Array.isArray(data) ? data : [])).catch(error => console.error("Reviews:", error)).finally(() => setLoading(false));
+  }, []);
+  useEffect(() => {
+    const controller = new AbortController();
+    Promise.all(sceneTitles.map(async (title, index) => {
+      try {
+        const params = new URLSearchParams({ action: "query", format: "json", origin: "*", prop: "pageimages", piprop: "thumbnail", pithumbsize: "1920", redirects: "1", titles: title });
+        const response = await fetch(`https://en.wikipedia.org/w/api.php?${params}`, { signal: controller.signal });
+        if (!response.ok) return null;
+        const payload = await response.json();
+        const page = Object.values(payload.query?.pages || {})[0] as { thumbnail?: { source?: string } } | undefined;
+        return page?.thumbnail?.source ? [index, { url: page.thumbnail.source, source: `https://en.wikipedia.org/wiki/${encodeURIComponent(title.replace(/ /g, "_"))}` }] as const : null;
+      } catch { return null; }
+    })).then(results => setBackgrounds(Object.fromEntries(results.filter(Boolean) as readonly (readonly [number, OnlinePhoto])[])));
+    return () => controller.abort();
   }, []);
   useEffect(() => {
     if (!root.current) return;
@@ -31,16 +50,29 @@ export default function Testimonial() {
     if (!story.current || !reviews.length) return;
     gsap.fromTo(story.current, { opacity: .2, y: 18 }, { opacity: 1, y: 0, duration: .7, ease: "power3.out" });
   }, [active, reviews.length]);
+  useEffect(() => {
+    if (!root.current || !background.current) return;
+    const tween = gsap.to(background.current, { yPercent: 12, scale: 1.12, ease: "none", scrollTrigger: { trigger: root.current, start: "top bottom", end: "bottom top", scrub: 1.2 } });
+    return () => tween.scrollTrigger?.kill();
+  }, []);
 
   const move = (direction: number) => setActive(value => (value + direction + reviews.length) % reviews.length);
   const current = reviews[active];
   const average = reviews.length ? reviews.reduce((sum, review) => sum + (Number(review.rating) || 0), 0) / reviews.length : 0;
+  const sceneIndex = active % sceneTitles.length;
+  const scene = backgrounds[sceneIndex];
+  const pointerMove = (event: React.PointerEvent<HTMLElement>) => {
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const x = event.clientX / innerWidth - .5, y = event.clientY / innerHeight - .5;
+    gsap.to(background.current, { x: x * 24, y: y * 14, duration: 1.6, ease: "power2.out" });
+    gsap.to(glow.current, { x: x * -55, y: y * -38, duration: 1.8, ease: "power2.out" });
+  };
 
-  return <section ref={root} className="relative isolate overflow-hidden bg-[#02080d] py-24 text-white sm:py-32">
-    <img src={bgImage} alt="Sri Lanka landscape" className="absolute inset-0 h-full w-full object-cover opacity-20" />
+  return <section ref={root} onPointerMove={pointerMove} className="relative isolate overflow-hidden bg-[#02080d] py-24 text-white sm:py-32">
+    <img ref={background} src={scene?.url || bgImage} onLoad={() => gsap.fromTo(background.current, { opacity: .04, scale: 1.08 }, { opacity: .32, scale: 1, duration: 1.5, ease: "power3.out" })} onError={event => { event.currentTarget.onerror = null; event.currentTarget.src = bgImage; }} referrerPolicy="no-referrer" alt={`${sceneTitles[sceneIndex]} landscape`} className="absolute inset-[-3%] h-[106%] w-[106%] object-cover will-change-transform" />
     <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(2,8,13,.98),rgba(2,8,13,.82)_55%,rgba(2,8,13,.68))]" />
     <div className="absolute inset-0 opacity-20 [background-image:linear-gradient(rgba(255,255,255,.06)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.06)_1px,transparent_1px)] [background-size:80px_80px]" />
-    <div className="absolute -right-24 top-1/2 h-96 w-96 -translate-y-1/2 rounded-full bg-cyan-300/10 blur-[130px]" />
+    <div ref={glow} className="absolute -right-24 top-1/2 h-96 w-96 -translate-y-1/2 rounded-full bg-cyan-300/15 blur-[130px]" />
 
     <div className="relative mx-auto max-w-7xl px-6 lg:px-10">
       <div className="review-reveal flex flex-col gap-7 border-b border-white/10 pb-10 lg:flex-row lg:items-end lg:justify-between">
@@ -61,6 +93,7 @@ export default function Testimonial() {
           <div className="mt-auto flex gap-2 border-t border-white/10 pt-5"><button type="button" onClick={() => move(-1)} aria-label="Previous review" className="flex h-12 flex-1 items-center justify-center rounded-full border border-white/15 transition hover:border-cyan-300 hover:bg-cyan-300 hover:text-slate-950"><ArrowLeft size={17} /></button><button type="button" onClick={() => move(1)} aria-label="Next review" className="flex h-12 flex-[1.6] items-center justify-center gap-2 rounded-full bg-cyan-300 text-[9px] font-black uppercase tracking-wider text-slate-950 transition hover:bg-white">Next story <ArrowRight size={16} /></button></div>
         </aside>
       </div> : <div className="mt-12 rounded-[2rem] border border-white/10 bg-white/5 p-16 text-center"><Quote className="mx-auto text-cyan-300" /><h3 className="mt-5 text-2xl font-black">The guest journal is opening soon.</h3><p className="mt-2 text-slate-400">Be the first to share a Lucky Travel story.</p></div>}
+      {scene && <a href={scene.source} target="_blank" rel="noreferrer" className="mt-5 block text-right text-[8px] uppercase tracking-[.18em] text-white/25 transition hover:text-white/60">Background · Wikipedia / Wikimedia Commons</a>}
     </div>
   </section>;
 }
