@@ -89,7 +89,35 @@ const requestGemini = async ({ instructions, input }) => {
         contents: [{ role: 'user', parts: [{ text: input }] }],
         generationConfig: {
           responseMimeType: 'application/json',
-          temperature: 0.4
+          temperature: 0.3,
+          maxOutputTokens: 2048,
+          responseSchema: {
+            type: 'OBJECT',
+            required: ['reply', 'language', 'recommendations', 'needsHuman', 'bookingDetails', 'nextQuestion'],
+            properties: {
+              reply: { type: 'STRING' },
+              language: { type: 'STRING' },
+              recommendations: {
+                type: 'ARRAY',
+                items: {
+                  type: 'OBJECT',
+                  properties: {
+                    id: { type: 'STRING' }, name: { type: 'STRING' }, description: { type: 'STRING' },
+                    duration: { type: 'STRING' }, places: { type: 'STRING' }, price: { type: 'STRING' }, image: { type: 'STRING' }
+                  }
+                }
+              },
+              needsHuman: { type: 'BOOLEAN' },
+              bookingDetails: {
+                type: 'OBJECT',
+                properties: {
+                  name: { type: 'STRING' }, phone: { type: 'STRING' }, travelDate: { type: 'STRING' }, travellers: { type: 'INTEGER' }
+                }
+              },
+              nextQuestion: { type: 'STRING' },
+              requestedField: { type: 'STRING', nullable: true }
+            }
+          }
         }
       }),
       signal: AbortSignal.timeout(30000)
@@ -150,7 +178,18 @@ const requestOpenAI = async ({ instructions, input }) => {
 };
 
 const requestAI = async payload => {
-  if (process.env.GEMINI_API_KEY) return requestGemini(payload);
+  if (process.env.GEMINI_API_KEY) {
+    let lastError;
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      try {
+        return await requestGemini(payload);
+      } catch (error) {
+        lastError = error;
+        if (error.status && error.status < 500 && error.status !== 429) throw error;
+      }
+    }
+    throw lastError;
+  }
   return requestOpenAI(payload);
 };
 
@@ -327,9 +366,9 @@ const fallbackChat = (message, packages, language) => {
     };
   }
   const intros = {
-    Sinhala: recommendations.length ? 'ඔබට ගැළපෙන packages කිහිපයක් මෙන්න.' : 'ඔබගේ budget, travel dates සහ කැමති ස්ථාන කියන්න. මම සුදුසු tour එකක් සොයා දෙන්නම්.',
-    Tamil: recommendations.length ? 'உங்களுக்கு பொருத்தமான சில பயணத் தொகுப்புகள் இங்கே.' : 'உங்கள் budget, travel dates மற்றும் விருப்பங்களை கூறுங்கள். பொருத்தமான tour ஒன்றை கண்டுபிடிக்கிறேன்.',
-    English: recommendations.length ? 'Here are the most relevant packages I found for you.' : 'Tell me your budget, travel dates, and interests, and I will find a suitable tour.'
+    Sinhala: recommendations.length ? 'ඔබට ගැළපෙන packages කිහිපයක් මෙන්න.' : 'මේ මොහොතේ AI destination guide එකෙන් නිවැරදි විස්තර ලබාගැනීමට නොහැකි වුණා. කරුණාකර ස්ථානයේ නම සහ ඔබ ගමන ආරම්භ කරන නගරය සඳහන් කර නැවත අහන්න.',
+    Tamil: recommendations.length ? 'உங்களுக்கு பொருத்தமான சில பயணத் தொகுப்புகள் இங்கே.' : 'தற்போது AI destination guide மூலம் சரியான தகவலைப் பெற முடியவில்லை. இடத்தின் பெயரையும் நீங்கள் புறப்படும் நகரத்தையும் குறிப்பிட்டு மீண்டும் கேளுங்கள்.',
+    English: recommendations.length ? 'Here are the most relevant packages I found for you.' : 'I could not reach the AI destination guide just now. Please mention the place name and where you will start, then try again.'
   };
 
   return {
@@ -352,14 +391,35 @@ router.post('/chat', async (req, res) => {
 
     const packages = await getPackages();
     const catalog = packages.map(packageView);
+    const conversationText = [...history.map(item => cleanText(item.content)), message].join(' ');
+    const catalogRequested = /package|packages|tour|tours|price|prices|cost|budget|below|under|book|booking|reserve|පැකේජ|ටුවර්|මිල|වියදම|වෙන්කර|බුක්|பேக்கேஜ்|சுற்றுலா|விலை|முன்பதிவு/i.test(conversationText);
+    const destinationOnlyInstructions = `You are an expert multilingual Sri Lanka destination guide. Reply in ${language}. Understand English, Sinhala, Tamil, mixed-language messages, spelling variations and Romanized Sinhala. Answer questions about any real place, village, beach, mountain, forest, national park, temple, town, route or activity anywhere in Sri Lanka.
+
+Answer the exact question directly in the first sentence. Give factual, practical information from your Sri Lanka travel knowledge. When relevant, cover how to get there from the user's starting point, approximate travel time and distance, main things to see and do, best season or time of day, recommended visit duration or nights, nearby places, suitable traveller types and one practical tip. If a name is genuinely ambiguous, ask for the district or nearest town. Explain that live weather, closures, transport schedules, ticket prices and availability should be confirmed because they can change.
+
+Do not discuss sales or redirect the traveller to a different destination. Do not ask for budget, dates or personal details unless they are necessary to answer the question. Use the conversation history for follow-up questions. Return valid JSON only with keys: reply, language, recommendations, needsHuman, bookingDetails, nextQuestion, requestedField. recommendations must always be an empty array, needsHuman must be false unless the user asks for an agent, bookingDetails must be an empty object, and requestedField must be null.`;
     let answer = null;
     let aiPowered = false;
 
     try {
       answer = await requestAI({
-        instructions: `You are Lucky Travel's friendly multilingual Sri Lanka travel assistant. Reply in ${language} and understand natural English, Sinhala, Tamil, and Romanized Sinhala such as "sigiriye yannath puluwanda". Answer the user's exact question directly in the first sentence, then add concise useful travel guidance. For destination questions explain whether they can visit, highlights, a sensible duration or best time, and practical route advice when known. Use only the supplied package catalog for package names, prices and package facts. Recommend only catalog packages that genuinely match the requested destination, interest, or budget; never fill recommendations with unrelated packages. It is valid to return an empty recommendations array when no package matches. Treat follow-up messages in the context of the full conversation instead of restarting. Ask only one concise follow-up question at a time and do not force booking questions unless the user shows booking intent. Never claim confirmed availability. If the user wants a human, booking, or WhatsApp handoff, set needsHuman true. Extract booking details from the full conversation. Return valid JSON only with keys: reply, language, recommendations (array of exact catalog items), needsHuman (boolean), bookingDetails (object with name, phone, travelDate in YYYY-MM-DD format, travellers when known), nextQuestion, requestedField (one of name, phone, travelDate, travellers, or null).`,
-        input: JSON.stringify({ conversation: [...history, { role: 'user', content: message }], packageCatalog: catalog })
+        instructions: destinationOnlyInstructions,
+        input: JSON.stringify({ conversation: [...history, { role: 'user', content: message }] })
       });
+      if (answer) {
+        const budgetMatch = message.match(/(?:under|below|less than|budget|\$)\s*\$?\s*(\d+)/i);
+        const relevant = findRelevantPackages(packages, message, budgetMatch?.[1]);
+        const relevantIds = new Set(relevant.map(item => item.id));
+        answer.recommendations = catalogRequested ? relevant.filter(item => relevantIds.has(item.id)).slice(0, 3) : [];
+        if (catalogRequested && answer.recommendations.length) {
+          const packageIntros = {
+            Sinhala: 'ඔබගේ ඉල්ලීමට ගැළපෙන Lucky Travel packages මෙන්න.',
+            Tamil: 'உங்கள் கோரிக்கைக்கு பொருத்தமான Lucky Travel packages இங்கே.',
+            English: 'Here are the Lucky Travel packages that match your request.'
+          };
+          answer.reply = packageIntros[language] || packageIntros.English;
+        }
+      }
       aiPowered = Boolean(answer);
     } catch (error) {
       console.error('AI chat fallback:', error.message, error.requestId || '');
