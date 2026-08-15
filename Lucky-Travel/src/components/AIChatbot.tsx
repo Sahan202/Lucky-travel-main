@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useRef, useState } from 'react';
-import { Bot, ExternalLink, LoaderCircle, MessageCircle, Send, X } from 'lucide-react';
+import { Bot, CalendarDays, Check, ExternalLink, LoaderCircle, MessageCircle, Send, X } from 'lucide-react';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 type Language = 'English' | 'Sinhala' | 'Tamil';
@@ -10,6 +10,12 @@ const welcomes: Record<Language, string> = {
   English: 'Ayubowan! I can find packages, answer Sri Lanka travel questions, and help with bookings.',
   Sinhala: 'ආයුබෝවන්! Packages සොයන්න, ශ්‍රී ලංකා සංචාරක තොරතුරු ලබාගන්න සහ booking එකක් කරන්න මට පුළුවන්.',
   Tamil: 'வணக்கம்! பயணத் தொகுப்புகளை தேடவும், இலங்கை பயண தகவல்களை பெறவும், booking செய்யவும் உதவுகிறேன்.'
+};
+
+const calendarCopy: Record<Language, { title: string; hint: string; button: string }> = {
+  English: { title: 'Choose your travel date', hint: 'Select your preferred departure date', button: 'Confirm travel date' },
+  Sinhala: { title: 'ඔබගේ ගමන් දිනය තෝරන්න', hint: 'ඔබ කැමති පිටත්වීමේ දිනය තෝරන්න', button: 'ගමන් දිනය තහවුරු කරන්න' },
+  Tamil: { title: 'உங்கள் பயணத் தேதியைத் தேர்ந்தெடுக்கவும்', hint: 'நீங்கள் விரும்பும் புறப்படும் தேதியைத் தேர்ந்தெடுக்கவும்', button: 'பயணத் தேதியை உறுதிப்படுத்தவும்' }
 };
 
 export default function AIChatbot() {
@@ -24,12 +30,21 @@ export default function AIChatbot() {
   const [language, setLanguage] = useState<Language>('English');
   const [messages, setMessages] = useState<Message[]>([{ role: 'assistant', content: welcomes.English }]);
   const [input, setInput] = useState('');
+  const [selectedDate, setSelectedDate] = useState('');
   const [loading, setLoading] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
+  const dateInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading]);
+
+  const latestMessage = messages[messages.length - 1];
+  const isDateRequested = latestMessage?.role === 'assistant' && latestMessage.requestedField === 'travelDate';
+
+  useEffect(() => {
+    if (!isDateRequested) setSelectedDate('');
+  }, [isDateRequested]);
   const changeLanguage = (next: Language) => {
     setLanguage(next);
     setMessages([{ role: 'assistant', content: welcomes[next] }]);
@@ -62,6 +77,13 @@ export default function AIChatbot() {
     void sendText(input);
   };
 
+  const confirmDate = () => {
+    if (!selectedDate) return;
+    const date = selectedDate;
+    setSelectedDate('');
+    void sendText(`My travel date is ${date}`);
+  };
+
   return <>
     <button onClick={() => setOpen(true)} aria-label="Open AI travel assistant" className={`fixed bottom-6 left-6 z-[70] flex items-center gap-2 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 p-4 font-semibold text-white shadow-2xl transition hover:scale-105 ${open ? 'pointer-events-none scale-75 opacity-0' : ''}`}>
       <MessageCircle size={25} /><span className="hidden sm:inline">AI Travel Assistant</span>
@@ -73,7 +95,7 @@ export default function AIChatbot() {
       <div className="flex-1 space-y-4 overflow-y-auto bg-slate-50 p-4 dark:bg-slate-950">{messages.map((message, index) => <div key={index} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}><div className={`max-w-[88%] rounded-2xl px-4 py-3 text-sm ${message.role === 'user' ? 'rounded-br-md bg-blue-600 text-white' : 'rounded-bl-md bg-white text-slate-700 shadow-sm dark:bg-slate-800 dark:text-slate-200'}`}><p className="whitespace-pre-line">{message.content}</p>
         {message.recommendations && message.recommendations.length > 0 && <div className="mt-3 space-y-2">{message.recommendations.map(item => <a href={`/tour/${item.id}`} key={item.id} className="block rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-600 dark:bg-slate-700"><p className="font-bold">{item.name}</p><p className="mt-1 text-xs text-cyan-600 dark:text-cyan-300">{item.duration} · {item.price}</p></a>)}</div>}
         {message.whatsappUrl && <a href={message.whatsappUrl} target="_blank" rel="noreferrer" className="mt-3 flex items-center justify-center gap-2 rounded-xl bg-green-500 px-3 py-2 font-semibold text-white">Continue on WhatsApp <ExternalLink size={14} /></a>}
-        {message.requestedField === 'travelDate' && index === messages.length - 1 && <div className="mt-3 rounded-xl border border-cyan-200 bg-cyan-50 p-3 dark:border-cyan-800 dark:bg-cyan-950/40"><label className="block text-xs font-semibold text-cyan-800 dark:text-cyan-200">Select your travel date</label><input type="date" min={new Date().toISOString().split('T')[0]} onChange={event => { if (event.target.value) void sendText(`My travel date is ${event.target.value}`); }} className="mt-2 w-full rounded-lg border border-cyan-300 bg-white px-3 py-2 text-slate-900 outline-none focus:border-cyan-500 dark:border-cyan-700 dark:bg-slate-800 dark:text-white [color-scheme:light] dark:[color-scheme:dark]" /></div>}
+        {message.requestedField === 'travelDate' && index === messages.length - 1 && <div className="mt-4 overflow-hidden rounded-2xl border border-cyan-200 bg-gradient-to-br from-cyan-50 via-white to-blue-50 shadow-sm dark:border-cyan-800/70 dark:from-cyan-950/60 dark:via-slate-900 dark:to-blue-950/60"><div className="flex items-center gap-3 border-b border-cyan-100 p-3.5 dark:border-cyan-900/60"><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-400 to-blue-600 text-white shadow-md"><CalendarDays size={20} /></span><div><p className="font-bold text-slate-900 dark:text-white">{calendarCopy[language].title}</p><p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">{calendarCopy[language].hint}</p></div></div><div className="p-3.5"><div className="relative flex w-full items-center rounded-xl border border-slate-200 bg-white px-3 shadow-sm transition hover:border-cyan-400 dark:border-slate-700 dark:bg-slate-800"><CalendarDays size={17} className="pointer-events-none text-cyan-600 dark:text-cyan-300" /><input ref={dateInputRef} type="date" min={new Date().toISOString().split('T')[0]} value={selectedDate} onChange={event => setSelectedDate(event.target.value)} aria-label={calendarCopy[language].title} className="w-full cursor-pointer bg-transparent px-3 py-3 text-sm font-semibold text-slate-800 outline-none dark:text-white [color-scheme:light] dark:[color-scheme:dark]" /></div><button type="button" disabled={!selectedDate || loading} onClick={confirmDate} className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-blue-500/20 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-45"><Check size={17} />{calendarCopy[language].button}</button></div></div>}
       </div></div>)}{loading && <div className="flex items-center gap-2 text-sm text-slate-500"><LoaderCircle className="animate-spin" size={17} /> Assistant is typing...</div>}<div ref={endRef} /></div>
       <div className="border-t border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900"><div className="mb-2 flex gap-2 overflow-x-auto pb-1">{['Packages below $500', 'Wildlife tours', 'I want to book'].map(prompt => <button key={prompt} onClick={() => setInput(prompt)} className="whitespace-nowrap rounded-full bg-slate-100 px-3 py-1.5 text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-300">{prompt}</button>)}</div><form onSubmit={send} className="flex gap-2"><input value={input} onChange={e => setInput(e.target.value)} placeholder="Ask about your Sri Lanka trip..." className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none focus:border-cyan-400 dark:border-slate-700 dark:bg-slate-800 dark:text-white" /><button disabled={loading || !input.trim()} className="rounded-xl bg-blue-600 p-3 text-white disabled:opacity-50"><Send size={19} /></button></form></div>
     </div>}
