@@ -75,7 +75,7 @@ const extractOpenAIResponseText = data => {
 const requestGemini = async ({ instructions, input }) => {
   if (!process.env.GEMINI_API_KEY) return null;
 
-  const model = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+  const model = process.env.GEMINI_MODEL || 'gemini-flash-lite-latest';
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
     {
@@ -89,7 +89,6 @@ const requestGemini = async ({ instructions, input }) => {
         contents: [{ role: 'user', parts: [{ text: input }] }],
         generationConfig: {
           responseMimeType: 'application/json',
-          temperature: 0.3,
           maxOutputTokens: 2048,
           responseSchema: {
             type: 'OBJECT',
