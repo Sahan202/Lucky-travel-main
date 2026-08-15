@@ -11,20 +11,35 @@ import mirissa from "../assets/Secret Beach Mirissa Sri Lanka.jpg";
 
 gsap.registerPlugin(ScrollTrigger);
 const scenes = [
-  { src: coast, place: "Southern coast", label: "Wild shores", no: "01" },
-  { src: kandy, place: "Kandy", label: "Sacred stories", no: "02" },
-  { src: heritage, place: "Ancient cities", label: "Living heritage", no: "03" },
-  { src: sigiriya, place: "Sigiriya", label: "Above the clouds", no: "04" },
-  { src: ella, place: "Ella", label: "Tea country trails", no: "05" },
-  { src: mirissa, place: "Mirissa", label: "Secret coves", no: "06" },
+  { src: coast, place: "Southern coast", label: "Wild shores", no: "01", wiki: "Southern Province, Sri Lanka" },
+  { src: kandy, place: "Kandy", label: "Sacred stories", no: "02", wiki: "Temple of the Tooth" },
+  { src: heritage, place: "Ancient cities", label: "Living heritage", no: "03", wiki: "Polonnaruwa" },
+  { src: sigiriya, place: "Sigiriya", label: "Above the clouds", no: "04", wiki: "Sigiriya" },
+  { src: ella, place: "Ella", label: "Tea country trails", no: "05", wiki: "Ella, Sri Lanka" },
+  { src: mirissa, place: "Mirissa", label: "Secret coves", no: "06", wiki: "Mirissa" },
 ];
+
+type OnlinePhoto = { url: string; source: string };
 
 export default function Hero() {
   const root = useRef<HTMLElement>(null), image = useRef<HTMLImageElement>(null), content = useRef<HTMLDivElement>(null), glow = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
+  const [onlinePhotos, setOnlinePhotos] = useState<Record<string, OnlinePhoto>>({});
   const [data, setData] = useState({ title: "Luxury Travel Experiences", subtitle: "Across Sri Lanka", description: "Private journeys through an island that feels like many worlds." });
 
   useEffect(() => { fetch(`${import.meta.env.VITE_API_URL}/api/hero`).then(r => r.json()).then(d => d.title && setData(d)).catch(console.error); }, []);
+  useEffect(() => {
+    const controller = new AbortController();
+    Promise.all(scenes.map(async scene => {
+      const params = new URLSearchParams({ action: "query", format: "json", origin: "*", prop: "pageimages", piprop: "thumbnail", pithumbsize: "1920", redirects: "1", titles: scene.wiki });
+      const response = await fetch(`https://en.wikipedia.org/w/api.php?${params}`, { signal: controller.signal });
+      if (!response.ok) return null;
+      const payload = await response.json();
+      const page = Object.values(payload.query?.pages || {})[0] as { thumbnail?: { source?: string } } | undefined;
+      return page?.thumbnail?.source ? [scene.place, { url: page.thumbnail.source, source: `https://en.wikipedia.org/wiki/${encodeURIComponent(scene.wiki.replace(/ /g, "_"))}` }] as const : null;
+    })).then(results => setOnlinePhotos(Object.fromEntries(results.filter(Boolean) as readonly (readonly [string, OnlinePhoto])[]))).catch(error => { if (error.name !== "AbortError") console.error("Hero photos:", error); });
+    return () => controller.abort();
+  }, []);
   useEffect(() => {
     if (!root.current || !image.current) return;
     const ctx = gsap.context(() => {
@@ -47,7 +62,7 @@ export default function Hero() {
   };
 
   return <section ref={root} id="home" onPointerMove={move} className="relative isolate min-h-[760px] overflow-hidden bg-[#03080d] text-white lg:min-h-screen">
-    <div className="absolute inset-[-3%] overflow-hidden"><img ref={image} src={scenes[active].src} alt={scenes[active].place} className="h-full w-full object-cover object-center will-change-transform" /></div>
+    <div className="absolute inset-[-3%] overflow-hidden"><img ref={image} src={onlinePhotos[scenes[active].place]?.url || scenes[active].src} onError={event => { event.currentTarget.onerror = null; event.currentTarget.src = scenes[active].src; }} referrerPolicy="no-referrer" alt={scenes[active].place} className="h-full w-full object-cover object-center will-change-transform" /></div>
     <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(1,7,12,.94),rgba(1,7,12,.58)_52%,rgba(1,7,12,.15)_78%,rgba(1,7,12,.5))]" />
     <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(1,7,12,.5),transparent_35%,rgba(1,7,12,.94))]" />
     <div ref={glow} className="absolute left-[42%] top-[34%] h-72 w-72 rounded-full bg-cyan-300/15 blur-[110px]" />
@@ -76,14 +91,16 @@ export default function Hero() {
     </div></div>
 
     <div className="absolute right-[3%] top-[29%] z-20 hidden xl:block">
-      <button type="button" onClick={() => change((active + 1) % scenes.length)} className="group relative w-52 text-left 2xl:w-60">
+      <div className="group relative w-52 text-left 2xl:w-60">
+        <button type="button" onClick={() => change((active + 1) % scenes.length)} className="relative block w-full text-left">
         <div className="absolute -inset-3 translate-x-2 translate-y-3 rounded-[2rem] border border-white/10 bg-white/5 transition duration-500 group-hover:translate-x-3 group-hover:translate-y-4" />
         <div className="relative overflow-hidden rounded-[1.75rem] border border-white/20 bg-black/35 p-2.5 shadow-[0_30px_80px_rgba(0,0,0,.45)] backdrop-blur-xl">
-          <div className="relative h-24 overflow-hidden rounded-[1.25rem] 2xl:h-28"><img src={scenes[(active + 1) % scenes.length].src} alt={scenes[(active + 1) % scenes.length].place} className="h-full w-full object-cover transition duration-700 group-hover:scale-110" /><div className="absolute inset-0 bg-gradient-to-t from-black/45 to-transparent" /><span className="absolute right-3 top-3 rounded-full border border-white/20 bg-black/30 px-2 py-1 text-[8px] font-bold uppercase tracking-[.18em] backdrop-blur">Next story</span></div>
+          <div className="relative h-24 overflow-hidden rounded-[1.25rem] 2xl:h-28"><img src={onlinePhotos[scenes[(active + 1) % scenes.length].place]?.url || scenes[(active + 1) % scenes.length].src} onError={event => { event.currentTarget.onerror = null; event.currentTarget.src = scenes[(active + 1) % scenes.length].src; }} referrerPolicy="no-referrer" alt={scenes[(active + 1) % scenes.length].place} className="h-full w-full object-cover transition duration-700 group-hover:scale-110" /><div className="absolute inset-0 bg-gradient-to-t from-black/45 to-transparent" /><span className="absolute right-3 top-3 rounded-full border border-white/20 bg-black/30 px-2 py-1 text-[8px] font-bold uppercase tracking-[.18em] backdrop-blur">Next story</span></div>
           <div className="flex items-center justify-between px-2 pb-2 pt-3"><div><p className="text-[8px] font-bold uppercase tracking-[.24em] text-cyan-300">Curated discovery</p><p className="mt-1 text-sm font-bold">{scenes[(active + 1) % scenes.length].place} <span className="font-normal text-white/45">· {scenes[(active + 1) % scenes.length].label}</span></p></div><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/10 transition group-hover:border-cyan-300 group-hover:bg-cyan-300 group-hover:text-slate-950"><MapPin size={14} /></span></div>
-        </div>
+        </div></button>
         <p className="mt-5 flex items-center justify-end gap-2 text-[8px] font-bold uppercase tracking-[.25em] text-white/45"><span className="h-px w-8 bg-cyan-300/60" /> Click to explore</p>
-      </button>
+        {onlinePhotos[scenes[(active + 1) % scenes.length].place] && <a href={onlinePhotos[scenes[(active + 1) % scenes.length].place].source} target="_blank" rel="noreferrer" onClick={event => event.stopPropagation()} className="mt-2 block text-right text-[8px] text-white/30 transition hover:text-white/70">Photo: Wikipedia / Wikimedia Commons</a>}
+      </div>
     </div>
   </section>;
 }
