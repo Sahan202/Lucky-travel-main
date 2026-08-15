@@ -11,7 +11,7 @@ import mirissa from "../assets/Secret Beach Mirissa Sri Lanka.jpg";
 
 gsap.registerPlugin(ScrollTrigger);
 const scenes = [
-  { src: coast, place: "Southern coast", label: "Wild shores", no: "01", wiki: "Southern Province, Sri Lanka" },
+  { src: coast, place: "Southern coast", label: "Wild shores", no: "01", wiki: "Mirissa" },
   { src: kandy, place: "Kandy", label: "Sacred stories", no: "02", wiki: "Temple of the Tooth" },
   { src: heritage, place: "Ancient cities", label: "Living heritage", no: "03", wiki: "Polonnaruwa" },
   { src: sigiriya, place: "Sigiriya", label: "Above the clouds", no: "04", wiki: "Sigiriya" },
@@ -23,7 +23,7 @@ type OnlinePhoto = { url: string; source: string };
 
 export default function Hero() {
   const root = useRef<HTMLElement>(null), image = useRef<HTMLImageElement>(null), content = useRef<HTMLDivElement>(null), glow = useRef<HTMLDivElement>(null);
-  const [active, setActive] = useState(0);
+  const [active, setActive] = useState(3);
   const [onlinePhotos, setOnlinePhotos] = useState<Record<string, OnlinePhoto>>({});
   const [data, setData] = useState({ title: "Luxury Travel Experiences", subtitle: "Across Sri Lanka", description: "Private journeys through an island that feels like many worlds." });
 
@@ -81,6 +81,11 @@ export default function Hero() {
             <ArrowUpRight size={15} className="absolute right-5 top-5 transition duration-500 group-hover:rotate-45 sm:right-6 sm:top-6" />
           </a>
         </div>
+        <button type="button" onClick={() => change((active + 1) % scenes.length)} className="group mt-7 flex w-full max-w-sm items-center gap-3 rounded-2xl border border-white/15 bg-black/30 p-2.5 text-left shadow-xl backdrop-blur-xl xl:hidden">
+          <img src={onlinePhotos[scenes[(active + 1) % scenes.length].place]?.url || scenes[(active + 1) % scenes.length].src} onError={event => { event.currentTarget.onerror = null; event.currentTarget.src = scenes[(active + 1) % scenes.length].src; }} referrerPolicy="no-referrer" alt={scenes[(active + 1) % scenes.length].place} className="h-16 w-24 shrink-0 rounded-xl object-cover transition duration-500 group-hover:scale-[1.03] sm:h-20 sm:w-32" />
+          <span className="min-w-0 flex-1"><span className="block text-[8px] font-bold uppercase tracking-[.22em] text-cyan-300">Up next · tap to explore</span><span className="mt-1 block truncate text-sm font-bold sm:text-base">{scenes[(active + 1) % scenes.length].place}</span><span className="mt-0.5 block truncate text-xs text-white/50">{scenes[(active + 1) % scenes.length].label}</span></span>
+          <ArrowUpRight size={17} className="mr-2 shrink-0 text-cyan-300" />
+        </button>
       </div>
     </div>
 
