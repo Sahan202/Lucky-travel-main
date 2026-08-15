@@ -15,7 +15,7 @@ import Jaffna from '../assets/Nallur Kovil.jpg';
 
 gsap.registerPlugin(ScrollTrigger);
 
-const bgVideo = 'https://res.cloudinary.com/dwgykuwgq/video/upload/v1786773679/SRI_LANKA_Cinematic_Travel_Film_1.mp4';
+const bgVideo = 'https://res.cloudinary.com/dwgykuwgq/video/upload/f_auto,q_auto:good/v1786773679/SRI_LANKA_Cinematic_Travel_Film_1.mp4';
 
 type Tour = { _id: string; name: string; description?: string; duration?: string; places?: string; price?: string; image?: string; imageSource?: string };
 
@@ -62,14 +62,29 @@ function SmartTourImage({ tour, fallback }: { tour: Tour; fallback: string }) {
 export default function TourPackages() {
   const titleRef = useRef<HTMLHeadingElement>(null);
   const cardsRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const navigate = useNavigate();
   const [tours, setTours] = useState<Tour[]>([]);
+  const [videoReady, setVideoReady] = useState(false);
 
   useEffect(() => {
     fetch(`${import.meta.env.VITE_API_URL}/api/packages`)
       .then(response => response.json())
       .then(data => setTours(Array.isArray(data) ? data : []))
       .catch(error => console.error('Error fetching packages:', error));
+  }, []);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const playVideo = () => { void video.play().catch(() => setVideoReady(false)); };
+    playVideo();
+    document.addEventListener('visibilitychange', playVideo);
+    window.addEventListener('focus', playVideo);
+    return () => {
+      document.removeEventListener('visibilitychange', playVideo);
+      window.removeEventListener('focus', playVideo);
+    };
   }, []);
 
   useEffect(() => {
@@ -86,9 +101,12 @@ export default function TourPackages() {
     window.open(`https://wa.me/94741105548?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer');
   };
 
-  return <section id="tours" className="relative overflow-hidden bg-black py-24 text-white">
-    <video autoPlay loop muted playsInline className="absolute inset-x-0 top-0 h-[100svh] w-full object-contain object-top md:inset-0 md:h-full md:object-cover md:object-center"><source src={bgVideo} type="video/mp4" /></video>
-    <div className="absolute inset-0 bg-gradient-to-b from-black/25 via-black/60 to-black md:bg-black/55" />
+  return <section id="tours" className="relative isolate overflow-hidden bg-[#020711] py-24 text-white">
+    <img src={Sigiriya} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full scale-105 object-cover opacity-70 blur-[2px]" />
+    <video ref={videoRef} autoPlay loop muted playsInline preload="metadata" poster={Sigiriya} onCanPlay={() => setVideoReady(true)} onPlaying={() => setVideoReady(true)} onError={() => setVideoReady(false)} className={`absolute inset-x-0 top-0 h-[100svh] w-full object-contain object-top transition-opacity duration-1000 md:inset-0 md:h-full md:object-cover md:object-center ${videoReady ? 'opacity-100' : 'opacity-0'}`}><source src={bgVideo} type="video/mp4" /></video>
+    <div className="absolute inset-0 bg-gradient-to-b from-[#020711]/20 via-[#020711]/65 to-[#020711] md:bg-[linear-gradient(180deg,rgba(2,7,17,.38),rgba(2,7,17,.66)_52%,rgba(2,7,17,.92))]" />
+    <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_15%,rgba(34,211,238,.16),transparent_32%),radial-gradient(circle_at_85%_55%,rgba(37,99,235,.13),transparent_34%)]" />
+    <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-300/70 to-transparent" />
     <div className="relative z-10 mx-auto max-w-7xl px-6">
       <div className="mx-auto mb-14 max-w-3xl text-center">
         <span className="inline-flex items-center gap-2 rounded-full border border-cyan-400/25 bg-cyan-400/10 px-4 py-2 text-sm font-semibold text-cyan-200"><Sparkles size={16} /> Handpicked Sri Lanka experiences</span>
