@@ -41,11 +41,11 @@ function App() {
       {!isAuthenticated ? (
         <Login onLogin={() => setIsAuthenticated(true)} />
       ) : (
-        <div className="flex h-screen bg-slate-50 dark:bg-[#020817]">
+        <div className="flex h-screen bg-[#020711] text-slate-100">
           <Sidebar currentPage={currentPage} setCurrentPage={setCurrentPage} searchQuery={searchQuery} />
           <div className="flex-1 flex flex-col overflow-hidden w-full">
             <Header onSearch={setSearchQuery} currentPage={currentPage} />
-            <main className="dashboard-main flex-1 overflow-y-auto p-3 sm:p-5 lg:p-7 bg-slate-50 dark:bg-[#020817]">
+            <main className="dashboard-main flex-1 overflow-y-auto bg-[#020711] p-3 sm:p-5 lg:p-7">
               {currentPage === 'overview' && <Dashboard setCurrentPage={setCurrentPage} />}
               {currentPage !== 'overview' && <SectionBanner page={currentPage} />}
               {currentPage === 'hero' && <HeroManager />}

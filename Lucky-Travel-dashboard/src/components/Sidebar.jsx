@@ -144,7 +144,7 @@ export default function Sidebar({ currentPage, setCurrentPage, searchQuery }) {
       </nav>
 
       <div className="px-4 pb-3">
-        <a href={import.meta.env.VITE_SITE_URL || 'http://localhost:5173'} target="_blank" rel="noreferrer" className="group flex items-center justify-between rounded-2xl border border-cyan-300/10 bg-gradient-to-r from-cyan-300/[0.08] to-teal-300/[0.03] px-4 py-3 text-sm font-semibold text-cyan-200 transition hover:border-cyan-300/25 hover:bg-cyan-300/[0.12]">
+        <a href={import.meta.env.VITE_SITE_URL || 'https://lucky-travel-website.vercel.app'} target="_blank" rel="noreferrer" className="group flex items-center justify-between rounded-2xl border border-cyan-300/10 bg-gradient-to-r from-cyan-300/[0.08] to-teal-300/[0.03] px-4 py-3 text-sm font-semibold text-cyan-200 transition hover:border-cyan-300/25 hover:bg-cyan-300/[0.12]">
           <span className="flex items-center gap-3"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-300/10">◉</span><span><span className="block text-xs">View website</span><span className="block text-[10px] font-normal text-slate-500">Open public site</span></span></span><span className="transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5">↗</span>
         </a>
       </div>
