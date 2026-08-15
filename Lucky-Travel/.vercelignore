@@ -1,0 +1,16 @@
+# Local dependencies and build output
+node_modules/
+dist/
+
+# Local environment and Vercel metadata
+.env
+.env.*
+.vercel/
+
+# Preserved Git history is not part of the application
+.git/
+.git-backup/
+
+# Videos are delivered from Cloudinary
+*.mp4
+src/assets/*.mp4

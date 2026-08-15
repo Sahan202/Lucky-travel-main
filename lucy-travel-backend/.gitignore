@@ -1,1 +1,4 @@
 backend-runtime*.log
+
+.vercel
+.env*

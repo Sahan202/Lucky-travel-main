@@ -38,16 +38,46 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.json());
-app.use('/api/ai', aiRoutes);
 
 // MongoDB Connection
 let db;
-mongoose.connect(process.env.MONGODB_URI)
-  .then(() => {
-    console.log('MongoDB connected to lucky-travel database');
-    db = mongoose.connection.db;
-  })
-  .catch(err => console.error('MongoDB connection error:', err));
+let dbConnectionPromise;
+
+function connectDatabase() {
+  if (db) return Promise.resolve(db);
+
+  if (!dbConnectionPromise) {
+    dbConnectionPromise = mongoose.connect(process.env.MONGODB_URI, {
+      serverSelectionTimeoutMS: 10000
+    })
+      .then(() => {
+        db = mongoose.connection.db;
+        console.log('MongoDB connected to lucky-travel database');
+        return db;
+      })
+      .catch((error) => {
+        dbConnectionPromise = null;
+        console.error('MongoDB connection error:', error);
+        throw error;
+      });
+  }
+
+  return dbConnectionPromise;
+}
+
+// Vercel functions can start cold. Wait for MongoDB before serving API data.
+app.use(async (req, res, next) => {
+  if (req.path === '/api/test') return next();
+
+  try {
+    await connectDatabase();
+    next();
+  } catch {
+    res.status(503).json({ message: 'Database connection unavailable' });
+  }
+});
+
+app.use('/api/ai', aiRoutes);
 const reviews = [
   {
     id: 1,
