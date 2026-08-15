@@ -4,6 +4,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
+const crypto = require('node:crypto');
 const User = require('./models/User');
 const multer = require('multer');
 const cloudinary = require('cloudinary').v2;
@@ -124,6 +125,39 @@ const verifyToken = (req, res, next) => {
 };
 
 // Chatbot booking leads (Dashboard)
+app.post('/api/tour-bookings', async (req, res) => {
+  try {
+    if (!db) return res.status(503).json({ message: 'Database not connected' });
+    const clean = value => String(value ?? '').trim();
+    const name = clean(req.body.name).slice(0, 100);
+    const phone = clean(req.body.phone).slice(0, 30);
+    const email = clean(req.body.email).slice(0, 150);
+    const travelDate = clean(req.body.travelDate).slice(0, 10);
+    const travellers = Number(req.body.travellers);
+    const packageId = clean(req.body.packageId).slice(0, 100);
+    const packageName = clean(req.body.packageName).slice(0, 150);
+    const destination = clean(req.body.destination).slice(0, 300);
+    const hotelPreference = clean(req.body.hotelPreference).slice(0, 80);
+    if (!name || !phone || !travelDate || !packageName || !Number.isInteger(travellers) || travellers < 1 || travellers > 30) return res.status(400).json({ message: 'Name, phone, travel date, package and a valid traveller count are required.' });
+    const requestedDate = new Date(`${travelDate}T00:00:00Z`);
+    if (Number.isNaN(requestedDate.getTime()) || requestedDate < new Date(new Date().toISOString().slice(0, 10))) return res.status(400).json({ message: 'Please select a valid future travel date.' });
+    const now = new Date();
+    const booking = {
+      sessionId: crypto.randomUUID(), source: 'tour-details', language: 'English', status: 'pending',
+      bookingDetails: { name, phone, email, travelDate, travellers, destination, package: packageName, hotelPreference },
+      recommendedPackage: { id: packageId, name: packageName, price: clean(req.body.price), duration: clean(req.body.duration), places: destination },
+      lastMessage: `Direct booking request for ${packageName}`,
+      messages: [{ role: 'user', content: `Booking request: ${packageName}, ${travelDate}, ${travellers} traveller(s), ${hotelPreference}`, createdAt: now }],
+      createdAt: now, updatedAt: now, statusUpdatedAt: now
+    };
+    const result = await db.collection('chatbotBookings').insertOne(booking);
+    res.status(201).json({ message: 'Your booking request has been received.', bookingId: String(result.insertedId) });
+  } catch (error) {
+    console.error('Tour booking create error:', error);
+    res.status(500).json({ message: 'Unable to submit your booking request.' });
+  }
+});
+
 app.get('/api/chatbot-bookings', verifyToken, async (req, res) => {
   try {
     if (!db) return res.status(503).json({ message: 'Database not connected' });
