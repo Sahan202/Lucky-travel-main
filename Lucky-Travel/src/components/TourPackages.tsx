@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Clock3, MapPin, MessageCircle, Play, Sparkles } from 'lucide-react';
+import { ArrowRight, Clock3, MapPin, MessageCircle, Sparkles } from 'lucide-react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Ella from '../assets/ella.jpg';
@@ -16,7 +16,6 @@ import Jaffna from '../assets/Nallur Kovil.jpg';
 gsap.registerPlugin(ScrollTrigger);
 
 const bgVideo = 'https://res.cloudinary.com/dwgykuwgq/video/upload/f_mp4,vc_h264,q_auto:good/v1786773679/SRI_LANKA_Cinematic_Travel_Film_1.mp4';
-const mobileBgVideo = 'https://res.cloudinary.com/dwgykuwgq/video/upload/c_pad,ar_9:16,b_rgb:020711,f_mp4,vc_h264,q_auto:good/v1786773679/SRI_LANKA_Cinematic_Travel_Film_1.mp4';
 
 type Tour = { _id: string; name: string; description?: string; duration?: string; places?: string; price?: string; image?: string; imageSource?: string };
 
@@ -67,7 +66,6 @@ export default function TourPackages() {
   const navigate = useNavigate();
   const [tours, setTours] = useState<Tour[]>([]);
   const [videoReady, setVideoReady] = useState(false);
-  const [videoPlaying, setVideoPlaying] = useState(false);
 
   useEffect(() => {
     fetch(`${import.meta.env.VITE_API_URL}/api/packages`)
@@ -79,7 +77,7 @@ export default function TourPackages() {
   useEffect(() => {
     const video = videoRef.current;
     if (!video || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    const playVideo = () => { void video.play().catch(() => setVideoPlaying(false)); };
+    const playVideo = () => { void video.play().catch(() => setVideoReady(false)); };
     playVideo();
     document.addEventListener('visibilitychange', playVideo);
     window.addEventListener('focus', playVideo);
@@ -88,13 +86,6 @@ export default function TourPackages() {
       window.removeEventListener('focus', playVideo);
     };
   }, []);
-
-  const startVideo = () => {
-    const video = videoRef.current;
-    if (!video) return;
-    video.muted = true;
-    void video.play().catch(() => setVideoPlaying(false));
-  };
 
   useEffect(() => {
     if (!titleRef.current || !cardsRef.current || !tours.length) return;
@@ -112,11 +103,10 @@ export default function TourPackages() {
 
   return <section id="tours" className="relative isolate overflow-hidden bg-[#020711] py-24 text-white">
     <img src={Sigiriya} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full scale-105 object-cover opacity-70 blur-[2px]" />
-    <video ref={videoRef} autoPlay loop muted playsInline preload="auto" poster={Sigiriya} onCanPlay={() => setVideoReady(true)} onPlaying={() => { setVideoReady(true); setVideoPlaying(true); }} onPause={() => setVideoPlaying(false)} onError={() => { setVideoReady(false); setVideoPlaying(false); }} className={`absolute inset-x-0 top-0 h-[100svh] w-full object-cover object-top transition-opacity duration-1000 md:inset-0 md:h-full md:object-cover md:object-center ${videoReady ? 'opacity-100' : 'opacity-0'}`}><source media="(max-width: 767px)" src={mobileBgVideo} type="video/mp4" /><source src={bgVideo} type="video/mp4" /></video>
+    <video ref={videoRef} autoPlay loop muted playsInline preload="metadata" poster={Sigiriya} onCanPlay={() => setVideoReady(true)} onPlaying={() => setVideoReady(true)} onError={() => setVideoReady(false)} className={`absolute inset-x-0 top-0 h-[100svh] w-full object-contain object-top transition-opacity duration-1000 md:inset-0 md:h-full md:object-cover md:object-center ${videoReady ? 'opacity-100' : 'opacity-0'}`}><source src={bgVideo} type="video/mp4" /></video>
     <div className="absolute inset-0 bg-gradient-to-b from-[#020711]/20 via-[#020711]/65 to-[#020711] md:bg-[linear-gradient(180deg,rgba(2,7,17,.38),rgba(2,7,17,.66)_52%,rgba(2,7,17,.92))]" />
     <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_15%,rgba(34,211,238,.16),transparent_32%),radial-gradient(circle_at_85%_55%,rgba(37,99,235,.13),transparent_34%)]" />
     <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-300/70 to-transparent" />
-    {!videoPlaying && <button type="button" onClick={startVideo} className="absolute right-4 top-5 z-20 flex items-center gap-2 rounded-full border border-white/20 bg-black/55 px-4 py-2 text-xs font-bold text-white shadow-xl backdrop-blur-md md:hidden"><span className="flex h-7 w-7 items-center justify-center rounded-full bg-cyan-400 text-slate-950"><Play size={13} fill="currentColor" /></span>Play travel film</button>}
     <div className="relative z-10 mx-auto max-w-7xl px-6">
       <div className="mx-auto mb-14 max-w-3xl text-center">
         <span className="inline-flex items-center gap-2 rounded-full border border-cyan-400/25 bg-cyan-400/10 px-4 py-2 text-sm font-semibold text-cyan-200"><Sparkles size={16} /> Handpicked Sri Lanka experiences</span>
