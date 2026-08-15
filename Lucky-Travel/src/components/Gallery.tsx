@@ -1,159 +1,81 @@
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { ArrowLeft, ArrowRight, Camera, Expand, MapPin, X } from "lucide-react";
 
 gsap.registerPlugin(ScrollTrigger);
-
-interface GalleryImage {
-  _id: string;
-  url: string;
-}
+interface GalleryImage { _id: string; url: string; }
+const frameClasses = [
+  "col-span-2 row-span-2 md:col-span-5 md:row-span-2",
+  "md:col-span-3",
+  "md:col-span-4",
+  "md:col-span-4",
+  "md:col-span-3",
+];
 
 export default function Gallery() {
-  const titleRef = useRef<HTMLHeadingElement>(null);
-  const imagesRef = useRef<HTMLDivElement>(null);
-  const [currentPage, setCurrentPage] = useState(0);
-  const [allImages, setAllImages] = useState<GalleryImage[]>([]);
-  const imagesPerPage = 12;
+  const sectionRef = useRef<HTMLElement>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
+  const [images, setImages] = useState<GalleryImage[]>([]);
+  const [page, setPage] = useState(0);
+  const [selected, setSelected] = useState<GalleryImage | null>(null);
+  const perPage = 5;
+  const pages = Math.ceil(images.length / perPage);
+  const visible = images.slice(page * perPage, (page + 1) * perPage);
 
   useEffect(() => {
-    fetchGallery();
+    fetch(`${import.meta.env.VITE_API_URL}/api/gallery`).then(response => response.json()).then(data => setImages(Array.isArray(data) ? data : [])).catch(error => console.error("Gallery:", error));
   }, []);
-
-  const fetchGallery = async () => {
-    try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/gallery`);
-      const data = await res.json();
-      setAllImages(data);
-    } catch (error) {
-      console.error('Error fetching gallery:', error);
-    }
-  };
-
-  const totalPages = Math.ceil(allImages.length / imagesPerPage);
-  const nextPage = () => {
-    if (currentPage < totalPages - 1) {
-      setCurrentPage(currentPage + 1);
-    }
-  };
-
-  const prevPage = () => {
-    if (currentPage > 0) {
-      setCurrentPage(currentPage - 1);
-    }
-  };
-
   useEffect(() => {
-    if (!titleRef.current || !imagesRef.current || allImages.length === 0) return;
-
-    const ctx = gsap.context(() => {
-      gsap.fromTo(
-        titleRef.current,
-        { opacity: 0, y: 50 },
-        {
-          opacity: 1,
-          y: 0,
-          duration: 1,
-          scrollTrigger: {
-            trigger: titleRef.current,
-            start: "top 80%",
-            end: "top 50%",
-            scrub: 1
-          }
-        }
-      );
-
-      const images = imagesRef.current!.querySelectorAll('.gallery-item');
-      gsap.fromTo(
-        images,
-        { y: 24 },
-        {
-          y: 0,
-          duration: 0.6,
-          stagger: 0.05,
-          ease: 'power2.out',
-          clearProps: 'transform'
-        }
-      );
-    });
-
+    if (!sectionRef.current) return;
+    const ctx = gsap.context(() => gsap.from(".moments-heading", { y: 55, opacity: 0, duration: 1, ease: "power3.out", scrollTrigger: { trigger: sectionRef.current, start: "top 72%" } }), sectionRef);
     return () => ctx.revert();
-  }, [currentPage, allImages]);
-  return (
-    <section id="gallery" className="relative overflow-hidden bg-slate-900 py-24 text-white">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.14),transparent_32%),radial-gradient(circle_at_bottom_right,rgba(59,130,246,0.14),transparent_35%)]" />
-      <div className="relative max-w-7xl mx-auto px-6">
-        <div className="text-center mb-16">
-          <span className="text-cyan-300 font-semibold text-sm uppercase tracking-wider">Gallery</span>
-          <h2 ref={titleRef} className="text-5xl font-bold mt-2 text-white">Travel Moments</h2>
-          <p className="text-slate-300 mt-4 max-w-2xl mx-auto">Explore our collection of unforgettable moments captured during our luxury tours</p>
-        </div>
+  }, []);
+  useEffect(() => {
+    if (!gridRef.current || !visible.length) return;
+    const ctx = gsap.context(() => gsap.fromTo(".moment-frame", { opacity: 0, y: 28, scale: .98 }, { opacity: 1, y: 0, scale: 1, stagger: .08, duration: .7, ease: "power3.out" }), gridRef);
+    return () => ctx.revert();
+  }, [page, images]);
+  useEffect(() => {
+    if (!selected) return;
+    const close = (event: KeyboardEvent) => event.key === "Escape" && setSelected(null);
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", close);
+    return () => { document.body.style.overflow = ""; window.removeEventListener("keydown", close); };
+  }, [selected]);
 
-        <div className="relative rounded-3xl border border-white/10 bg-white/5 p-8 shadow-2xl backdrop-blur overflow-hidden">
-          <div className="overflow-hidden rounded-2xl">
-            <div 
-              ref={imagesRef}
-              className="flex transition-transform duration-700 ease-out"
-              style={{ transform: `translateX(-${currentPage * 100}%)` }}
-            >
-              {Array.from({ length: totalPages }).map((_, pageIndex) => (
-                <div key={pageIndex} className="min-w-full grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {allImages.slice(pageIndex * imagesPerPage, (pageIndex + 1) * imagesPerPage).map((item) => (
-                    <div key={item._id} className="gallery-item relative group overflow-hidden rounded-xl">
-                      <img
-                        src={item.url}
-                        alt="Travel moment"
-                        className="w-full h-64 object-cover transition-transform duration-500 group-hover:scale-110 cursor-pointer"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                    </div>
-                  ))}
-                </div>
-              ))}
-            </div>
-          </div>
+  const move = (direction: number) => setPage(current => Math.min(Math.max(current + direction, 0), Math.max(pages - 1, 0)));
 
-          <button
-            onClick={prevPage}
-            disabled={currentPage === 0}
-            className="absolute left-4 top-1/2 -translate-y-1/2 bg-white dark:bg-gray-700 hover:bg-blue-600 dark:hover:bg-blue-600 disabled:bg-gray-200 dark:disabled:bg-gray-600 disabled:cursor-not-allowed text-gray-800 dark:text-white hover:text-white font-semibold p-3 rounded-full transition-all duration-300 shadow-xl hover:shadow-2xl hover:scale-110 z-10"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
-
-          <button
-            onClick={nextPage}
-            disabled={currentPage === totalPages - 1}
-            className="absolute right-4 top-1/2 -translate-y-1/2 bg-white dark:bg-gray-700 hover:bg-blue-600 dark:hover:bg-blue-600 disabled:bg-gray-200 dark:disabled:bg-gray-600 disabled:cursor-not-allowed text-gray-800 dark:text-white hover:text-white font-semibold p-3 rounded-full transition-all duration-300 shadow-xl hover:shadow-2xl hover:scale-110 z-10"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
-        </div>
-
-        <div className="flex justify-center items-center gap-2 mt-8">
-          {Array.from({ length: totalPages }).map((_, index) => (
-            <button
-              key={index}
-              onClick={() => setCurrentPage(index)}
-              className={`h-2 rounded-full transition-all duration-300 ${
-                index === currentPage 
-                  ? 'bg-blue-600 w-12' 
-                  : 'bg-gray-300 dark:bg-gray-600 w-2 hover:w-6 hover:bg-blue-400'
-              }`}
-            />
-          ))}
-        </div>
-
-        <div className="text-center mt-6">
-          <span className="text-slate-400 font-medium text-sm">
-            {currentPage + 1} / {totalPages}
-          </span>
-        </div>
+  return <section ref={sectionRef} id="gallery" className="relative isolate overflow-hidden bg-[#e8e1d4] py-24 text-slate-950 sm:py-32">
+    <div className="absolute inset-0 opacity-40 [background-image:radial-gradient(rgba(15,23,42,.18)_0.7px,transparent_0.7px)] [background-size:7px_7px]" />
+    <div className="absolute -right-20 top-20 font-serif text-[18rem] leading-none text-slate-950/[.025] sm:text-[28rem]">L</div>
+    <div className="relative mx-auto max-w-[1380px] px-5 sm:px-8 lg:px-12">
+      <div className="moments-heading grid gap-8 border-y border-slate-950/15 py-8 lg:grid-cols-[1fr_auto] lg:items-end">
+        <div><p className="flex items-center gap-3 text-[10px] font-black uppercase tracking-[.32em] text-cyan-800"><Camera size={15} /> Postcards from the island</p><h2 className="mt-4 text-5xl font-black leading-[.88] tracking-[-.065em] sm:text-7xl lg:text-[6.5rem]">Travel<br /><span className="font-serif font-normal italic text-cyan-800">moments.</span></h2></div>
+        <div className="max-w-md lg:pb-2"><p className="font-serif text-xl italic leading-8 text-slate-700 sm:text-2xl">“The best journeys leave you with stories no itinerary could have predicted.”</p><div className="mt-6 flex items-center gap-3 text-[9px] font-black uppercase tracking-[.25em] text-slate-500"><span className="h-px w-12 bg-slate-500" /> Captured across Sri Lanka</div></div>
       </div>
-    </section>
-  );
+
+      {visible.length ? <>
+        <div ref={gridRef} className="mt-10 grid auto-rows-[190px] grid-cols-2 gap-3 md:grid-cols-12 md:grid-rows-2 sm:auto-rows-[230px] lg:auto-rows-[270px]">
+          {visible.map((item, index) => <button key={item._id} type="button" onClick={() => setSelected(item)} className={`moment-frame group relative overflow-hidden bg-slate-900 text-left ${frameClasses[index]}`}>
+            <img src={item.url} alt={`Sri Lanka travel moment ${page * perPage + index + 1}`} loading={index ? "lazy" : "eager"} className="h-full w-full object-cover transition duration-[1200ms] ease-out group-hover:scale-110" />
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/75 via-transparent to-transparent opacity-70 transition group-hover:opacity-95" />
+            <span className="absolute left-4 top-4 text-[9px] font-bold tracking-[.22em] text-white/70">FRAME {String(page * perPage + index + 1).padStart(2, "0")}</span>
+            {index === 0 && <div className="absolute bottom-0 left-0 p-5 sm:p-7"><p className="flex items-center gap-2 text-[9px] font-bold uppercase tracking-[.22em] text-cyan-200"><MapPin size={12} /> Somewhere beautiful, Sri Lanka</p><p className="mt-2 font-serif text-2xl italic text-white sm:text-4xl">A story worth keeping</p></div>}
+            <span className="absolute bottom-4 right-4 flex h-9 w-9 translate-y-2 items-center justify-center rounded-full border border-white/30 bg-black/20 text-white opacity-0 backdrop-blur transition group-hover:translate-y-0 group-hover:opacity-100"><Expand size={15} /></span>
+          </button>)}
+        </div>
+
+        <div className="mt-8 flex flex-col gap-5 border-t border-slate-950/15 pt-6 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-4"><span className="font-serif text-3xl italic text-cyan-900">{String(page + 1).padStart(2, "0")}</span><div className="h-px w-16 bg-slate-950/25 sm:w-28"><div className="h-px bg-cyan-700 transition-all duration-500" style={{ width: `${((page + 1) / pages) * 100}%` }} /></div><span className="text-[10px] font-black tracking-[.2em] text-slate-500">{String(pages).padStart(2, "0")}</span></div>
+          <div className="flex gap-2"><button type="button" onClick={() => move(-1)} disabled={!page} aria-label="Previous moments" className="flex h-12 w-16 items-center justify-center rounded-full border border-slate-950/20 transition hover:border-cyan-800 hover:bg-cyan-800 hover:text-white disabled:cursor-not-allowed disabled:opacity-25"><ArrowLeft size={18} /></button><button type="button" onClick={() => move(1)} disabled={page >= pages - 1} aria-label="Next moments" className="flex h-12 w-24 items-center justify-center gap-2 rounded-full bg-slate-950 text-white transition hover:bg-cyan-800 disabled:cursor-not-allowed disabled:opacity-25"><span className="text-[9px] font-bold uppercase tracking-wider">Next</span><ArrowRight size={17} /></button></div>
+        </div>
+      </> : <div className="mt-10 grid h-[540px] animate-pulse grid-cols-2 gap-3 md:grid-cols-12"><div className="col-span-2 bg-slate-950/10 md:col-span-5" /><div className="col-span-2 bg-slate-950/10 md:col-span-7" /></div>}
+    </div>
+
+    {selected && <div role="dialog" aria-modal="true" aria-label="Travel moment preview" onClick={() => setSelected(null)} className="fixed inset-0 z-[100] flex items-center justify-center bg-[#02070c]/95 p-4 backdrop-blur-xl sm:p-10">
+      <button type="button" onClick={() => setSelected(null)} aria-label="Close preview" className="absolute right-5 top-5 flex h-12 w-12 items-center justify-center rounded-full border border-white/20 text-white transition hover:rotate-90 hover:bg-white hover:text-slate-950 sm:right-8 sm:top-8"><X size={20} /></button>
+      <div onClick={event => event.stopPropagation()} className="relative max-h-[84vh] max-w-6xl"><img src={selected.url} alt="Selected Sri Lanka travel moment" className="max-h-[78vh] w-auto max-w-full object-contain shadow-[0_40px_120px_rgba(0,0,0,.6)]" /><div className="mt-4 flex items-center justify-between text-white"><p className="font-serif text-lg italic">A Lucky Travel memory</p><p className="text-[9px] font-bold uppercase tracking-[.25em] text-white/45">Press ESC to close</p></div></div>
+    </div>}
+  </section>;
 }
