@@ -22,7 +22,16 @@ export default function AIActivityFinder({ destinations, selected, onToggle, onD
       const response = await fetch(`${API_URL}/api/ai/activities`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ selectedDestinations: destinations, activityTypes: types, travellerStyle, intensity, language }) });
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || 'Unable to find activities.');
-      setRecommendations(data.recommendations || []);
+      const validRecommendations = (Array.isArray(data.recommendations) ? data.recommendations : [])
+        .map((item: Partial<Recommendation> & { name?: string; places?: string }) => ({
+          activity: item.activity || item.name || 'Sri Lanka experience',
+          location: item.location || item.places || 'Sri Lanka',
+          type: item.type || 'Experience',
+          why: item.why || 'Recommended for your selected interests and route.',
+          duration: item.duration || 'Half day',
+          bestTime: item.bestTime || 'Confirm for your travel date'
+        }));
+      setRecommendations(validRecommendations);
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : 'Unable to find activities.');
     } finally { setLoading(false); }

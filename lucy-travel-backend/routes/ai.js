@@ -98,7 +98,7 @@ const extractOpenAIResponseText = data => {
     .join('');
 };
 
-const requestGemini = async ({ instructions, input }) => {
+const requestGemini = async ({ instructions, input, responseSchema }) => {
   if (!process.env.GEMINI_API_KEY) return null;
 
   const model = process.env.GEMINI_MODEL || 'gemini-flash-lite-latest';
@@ -116,7 +116,7 @@ const requestGemini = async ({ instructions, input }) => {
         generationConfig: {
           responseMimeType: 'application/json',
           maxOutputTokens: 2048,
-          responseSchema: {
+          responseSchema: responseSchema || {
             type: 'OBJECT',
             required: ['reply', 'language', 'recommendations', 'needsHuman', 'bookingDetails', 'nextQuestion'],
             properties: {
@@ -303,6 +303,18 @@ const activityCatalog = [
   { activity: 'Scenic train journey', locations: ['Kandy', 'Nuwara Eliya', 'Ella'], type: 'Scenic', duration: '3-7 hours', bestTime: 'Daytime' }
 ];
 
+const normalizeActivityRecommendations = (items, interests) => (Array.isArray(items) ? items : [])
+  .map(item => ({
+    activity: cleanText(item.activity || item.name || item.title),
+    location: cleanText(item.location || item.places || item.destination),
+    type: cleanText(item.type || item.category || interests[0] || 'Experience'),
+    why: cleanText(item.why || item.description || 'Recommended for your selected interests and route.'),
+    duration: cleanText(item.duration || 'Half day'),
+    bestTime: cleanText(item.bestTime || item.best_time || 'Confirm for your travel date')
+  }))
+  .filter(item => item.activity && item.location)
+  .slice(0, 8);
+
 router.post('/activities', async (req, res) => {
   try {
     const details = req.body || {};
@@ -322,9 +334,28 @@ router.post('/activities', async (req, res) => {
     try {
       const answer = await requestAI({
         instructions: `You are Lucky Travel's specialist activity and destination recommender for foreign visitors to Sri Lanka. If destinations are supplied, prioritize realistic activities at or near them and also suggest useful nearby alternatives. If no destination is supplied, use the selected activity interests to recommend the best Sri Lankan locations where the traveller can do them. Prefer exact location names from the verified activity catalog so the website can add them to the map. Respect traveller style, trip dates and physical intensity. Clearly distinguish seasonal or weather-dependent activities and never claim confirmed availability. Return valid JSON only with one key: recommendations. recommendations must be an array of 5-8 objects with keys activity, location, type, why, duration, bestTime. Respond in ${details.language || 'English'}.`,
-        input: JSON.stringify({ traveller: details, verifiedActivityCatalog: activityCatalog })
+        input: JSON.stringify({ traveller: details, verifiedActivityCatalog: activityCatalog }),
+        responseSchema: {
+          type: 'OBJECT',
+          required: ['recommendations'],
+          properties: {
+            recommendations: {
+              type: 'ARRAY',
+              minItems: 5,
+              maxItems: 8,
+              items: {
+                type: 'OBJECT',
+                required: ['activity', 'location', 'type', 'why', 'duration', 'bestTime'],
+                properties: {
+                  activity: { type: 'STRING' }, location: { type: 'STRING' }, type: { type: 'STRING' },
+                  why: { type: 'STRING' }, duration: { type: 'STRING' }, bestTime: { type: 'STRING' }
+                }
+              }
+            }
+          }
+        }
       });
-      recommendations = Array.isArray(answer?.recommendations) ? answer.recommendations : null;
+      recommendations = normalizeActivityRecommendations(answer?.recommendations, interests);
       aiPowered = Boolean(recommendations?.length);
     } catch (error) {
       console.error('AI activity finder fallback:', error.message);
