@@ -18,6 +18,7 @@ export default function AIActivityFinder({ destinations, selected, onToggle, onD
   const background = useRef<HTMLImageElement>(null);
   const glow = useRef<HTMLDivElement>(null);
   const [types, setTypes] = useState<string[]>(['Adventure', 'Culture']);
+  const [sceneType, setSceneType] = useState('Adventure');
   const [travellerStyle, setTravellerStyle] = useState('First-time visitor');
   const [intensity, setIntensity] = useState('Moderate');
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
@@ -27,11 +28,11 @@ export default function AIActivityFinder({ destinations, selected, onToggle, onD
 
   useEffect(() => {
     const controller = new AbortController();
-    const title = activityScenes[types[0]] || 'Tourism in Sri Lanka';
+    const title = activityScenes[sceneType] || 'Tourism in Sri Lanka';
     const params = new URLSearchParams({ action: 'query', format: 'json', origin: '*', prop: 'pageimages', piprop: 'thumbnail', pithumbsize: '1600', redirects: '1', titles: title });
     fetch(`https://en.wikipedia.org/w/api.php?${params}`, { signal: controller.signal }).then(response => response.json()).then(payload => { const page = Object.values(payload.query?.pages || {})[0] as { thumbnail?: { source?: string } } | undefined; setPhoto(page?.thumbnail?.source ? { url: page.thumbnail.source, source: `https://en.wikipedia.org/wiki/${encodeURIComponent(title.replace(/ /g, '_'))}` } : null); }).catch(error => { if (error.name !== 'AbortError') setPhoto(null); });
     return () => controller.abort();
-  }, [types]);
+  }, [sceneType]);
   useEffect(() => {
     if (!root.current || !background.current) return;
     const element = root.current;
@@ -58,7 +59,13 @@ export default function AIActivityFinder({ destinations, selected, onToggle, onD
   }, []);
   useEffect(() => { ScrollTrigger.refresh(); }, [recommendations.length, loading]);
 
-  const toggleType = (type: string) => setTypes(previous => previous.includes(type) ? previous.filter(item => item !== type) : [...previous, type]);
+  const toggleType = (type: string) => setTypes(previous => {
+    const removing = previous.includes(type);
+    const next = removing ? previous.filter(item => item !== type) : [...previous, type];
+    if (!removing) setSceneType(type);
+    else if (sceneType === type) setSceneType(next[next.length - 1] || 'Adventure');
+    return next;
+  });
   const findActivities = async () => {
     setLoading(true); setError(''); setRecommendations([]);
     try {
@@ -83,7 +90,7 @@ export default function AIActivityFinder({ destinations, selected, onToggle, onD
   const pointerMove = (event: React.PointerEvent<HTMLElement>) => { if (matchMedia('(prefers-reduced-motion: reduce)').matches) return; const x = event.clientX / innerWidth - .5, y = event.clientY / innerHeight - .5; gsap.to(background.current, { x: x * 52, y: y * 34, duration: 1.5, ease: 'power2.out' }); gsap.to(glow.current, { x: x * -105, y: y * -72, duration: 1.8, ease: 'power2.out' }); };
 
   return <section ref={root} onPointerMove={pointerMove} className="relative isolate mb-10 overflow-hidden rounded-[2rem] border border-cyan-300/20 bg-slate-950 shadow-[0_35px_100px_rgba(0,0,0,.35)]">
-    <img ref={background} src={photo?.url || fallbackImage} onLoad={() => gsap.fromTo(background.current, { opacity: .08 }, { opacity: .6, duration: 1.3 })} onError={event => { event.currentTarget.onerror = null; event.currentTarget.src = fallbackImage; }} referrerPolicy="no-referrer" alt={`${types[0] || 'Sri Lanka'} activity`} className="absolute inset-[-4%] h-[108%] w-[108%] object-cover will-change-transform" />
+    <img ref={background} src={photo?.url || fallbackImage} onLoad={() => gsap.fromTo(background.current, { opacity: .08 }, { opacity: .6, duration: 1.3 })} onError={event => { event.currentTarget.onerror = null; event.currentTarget.src = fallbackImage; }} referrerPolicy="no-referrer" alt={`${sceneType} activity`} className="absolute inset-[-4%] h-[108%] w-[108%] object-cover will-change-transform" />
     <div className="absolute inset-0 bg-[linear-gradient(105deg,rgba(2,8,18,.84),rgba(2,8,18,.58)_52%,rgba(2,8,18,.4))]" /><div className="absolute inset-0 bg-gradient-to-t from-slate-950/65 via-transparent to-slate-950/10" /><div ref={glow} className="absolute right-[12%] top-[18%] h-64 w-64 rounded-full bg-cyan-300/15 blur-[100px]" />
     <div className="activity-grid-layer absolute -inset-[12%] opacity-15 [background-image:linear-gradient(rgba(255,255,255,.08)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.08)_1px,transparent_1px)] [background-size:64px_64px]" />
     <div className="activity-orbit-one absolute -left-24 top-1/3 h-52 w-52 rounded-full border border-cyan-300/15"><span className="absolute right-5 top-1 h-2 w-2 rounded-full bg-cyan-300 shadow-[0_0_20px_rgba(103,232,249,.9)]" /></div><div className="activity-orbit-two absolute -right-28 bottom-8 h-64 w-64 rounded-full border border-white/10"><span className="absolute bottom-7 left-4 h-2.5 w-2.5 rounded-full border border-white/50" /></div>
