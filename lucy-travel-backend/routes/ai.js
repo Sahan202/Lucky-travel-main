@@ -20,6 +20,21 @@ const numericPrice = price => {
   return match ? Number(match[0]) : Number.POSITIVE_INFINITY;
 };
 
+const queryAliases = {
+  sigiriye: 'sigiriya', seegiriya: 'sigiriya', 'සීගිරිය': 'sigiriya',
+  kandyye: 'kandy', nuwaraeliya: 'nuwara eliya', nuwareliya: 'nuwara eliya',
+  galle: 'galle', yala: 'yala', udawalawa: 'udawalawe', udawalawe: 'udawalawe',
+  anuradapura: 'anuradhapura', polonnaruwa: 'polonnaruwa', trinco: 'trincomalee'
+};
+
+const normalizeQuery = value => {
+  let normalized = cleanText(value).toLowerCase().normalize('NFKC');
+  Object.entries(queryAliases).forEach(([alias, destination]) => {
+    normalized = normalized.replace(new RegExp(`\\b${alias}\\b`, 'giu'), destination);
+  });
+  return normalized;
+};
+
 const packageView = item => ({
   id: String(item._id),
   name: item.name || 'Sri Lanka Tour',
@@ -31,8 +46,10 @@ const packageView = item => ({
 });
 
 const findRelevantPackages = (packages, text, budget) => {
-  const terms = cleanText(text).toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(term => term.length > 2);
+  const normalizedText = normalizeQuery(text);
+  const terms = normalizedText.split(/[^\p{L}\p{N}]+/u).filter(term => term.length > 2);
   const maxBudget = Number(budget) > 0 ? Number(budget) : Number.POSITIVE_INFINITY;
+  const isBudgetSearch = Number.isFinite(maxBudget) || /under|below|less than|budget|cheap|\$/i.test(normalizedText);
 
   return packages
     .map(item => {
@@ -40,7 +57,7 @@ const findRelevantPackages = (packages, text, budget) => {
       const score = terms.reduce((total, term) => total + (haystack.includes(term) ? 1 : 0), 0);
       return { item, score };
     })
-    .filter(({ item }) => numericPrice(item.price) <= maxBudget)
+    .filter(({ item, score }) => numericPrice(item.price) <= maxBudget && (score > 0 || isBudgetSearch))
     .sort((a, b) => b.score - a.score || numericPrice(a.item.price) - numericPrice(b.item.price))
     .slice(0, 3)
     .map(({ item }) => packageView(item));
@@ -92,7 +109,15 @@ const requestGemini = async ({ instructions, input }) => {
     .map(part => part.text || '')
     .join('');
   if (!text) throw new Error('Gemini returned an empty response.');
-  return JSON.parse(text);
+  const cleaned = text.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '');
+  try {
+    return JSON.parse(cleaned);
+  } catch {
+    const start = cleaned.indexOf('{');
+    const end = cleaned.lastIndexOf('}');
+    if (start >= 0 && end > start) return JSON.parse(cleaned.slice(start, end + 1));
+    throw new Error('Gemini returned invalid JSON.');
+  }
 };
 
 const requestOpenAI = async ({ instructions, input }) => {
@@ -283,8 +308,24 @@ router.post('/planner', async (req, res) => {
 const fallbackChat = (message, packages, language) => {
   const budgetMatch = message.match(/(?:under|below|less than|budget|\$)\s*\$?\s*(\d+)/i);
   const recommendations = findRelevantPackages(packages, message, budgetMatch?.[1]);
-  const lower = message.toLowerCase();
   const wantsHuman = /human|agent|whatsapp|book|booking|reserve|මනුෂ්‍ය|වට්ස්ඇප්|மனித|முன்பதிவு/i.test(message);
+  const primary = recommendations[0];
+  if (primary && !budgetMatch) {
+    const facts = [primary.duration, primary.price].filter(Boolean).join(' · ');
+    const replies = {
+      Sinhala: `ඔව්, ${primary.name} යන්න පුළුවන්. ${primary.description || 'මෙය ශ්‍රී ලංකාවේ ජනප්‍රිය සංචාරක අත්දැකීමක්.'}${facts ? ` Package විස්තර: ${facts}.` : ''} ඔබගේ travel date එක සහ travellers ගණන කිව්වොත් ගැළපෙන plan එකක් දෙන්නම්.`,
+      Tamil: `ஆம், ${primary.name} செல்ல முடியும். ${primary.description || 'இது இலங்கையின் பிரபலமான பயண அனுபவமாகும்.'}${facts ? ` Package விவரம்: ${facts}.` : ''}`,
+      English: `Yes, you can visit ${primary.name}. ${primary.description || 'It is a popular Sri Lankan travel experience.'}${facts ? ` Package details: ${facts}.` : ''} Tell me your travel date and number of travellers and I can help plan it.`
+    };
+    return {
+      reply: replies[language] || replies.English,
+      language,
+      recommendations: [primary],
+      needsHuman: wantsHuman,
+      bookingDetails: {},
+      nextQuestion: wantsHuman ? 'Please share your name, phone number, travel date, and number of travellers.' : ''
+    };
+  }
   const intros = {
     Sinhala: recommendations.length ? 'ඔබට ගැළපෙන packages කිහිපයක් මෙන්න.' : 'ඔබගේ budget, travel dates සහ කැමති ස්ථාන කියන්න. මම සුදුසු tour එකක් සොයා දෙන්නම්.',
     Tamil: recommendations.length ? 'உங்களுக்கு பொருத்தமான சில பயணத் தொகுப்புகள் இங்கே.' : 'உங்கள் budget, travel dates மற்றும் விருப்பங்களை கூறுங்கள். பொருத்தமான tour ஒன்றை கண்டுபிடிக்கிறேன்.',
@@ -316,7 +357,7 @@ router.post('/chat', async (req, res) => {
 
     try {
       answer = await requestAI({
-        instructions: `You are Lucky Travel's friendly multilingual Sri Lanka travel assistant. Reply in ${language}. Use only the supplied package catalog for package names, prices and details. You can answer destination questions, filter packages, and collect booking details. Ask only one concise follow-up question at a time. Never claim confirmed availability. If the user wants a human, booking, or WhatsApp handoff, set needsHuman true. Extract booking details from the full conversation. Return valid JSON only with keys: reply, language, recommendations (array of catalog items), needsHuman (boolean), bookingDetails (object with name, phone, travelDate in YYYY-MM-DD format, travellers when known), nextQuestion, requestedField (one of name, phone, travelDate, travellers, or null).`,
+        instructions: `You are Lucky Travel's friendly multilingual Sri Lanka travel assistant. Reply in ${language} and understand natural English, Sinhala, Tamil, and Romanized Sinhala such as "sigiriye yannath puluwanda". Answer the user's exact question directly in the first sentence, then add concise useful travel guidance. For destination questions explain whether they can visit, highlights, a sensible duration or best time, and practical route advice when known. Use only the supplied package catalog for package names, prices and package facts. Recommend only catalog packages that genuinely match the requested destination, interest, or budget; never fill recommendations with unrelated packages. It is valid to return an empty recommendations array when no package matches. Treat follow-up messages in the context of the full conversation instead of restarting. Ask only one concise follow-up question at a time and do not force booking questions unless the user shows booking intent. Never claim confirmed availability. If the user wants a human, booking, or WhatsApp handoff, set needsHuman true. Extract booking details from the full conversation. Return valid JSON only with keys: reply, language, recommendations (array of exact catalog items), needsHuman (boolean), bookingDetails (object with name, phone, travelDate in YYYY-MM-DD format, travellers when known), nextQuestion, requestedField (one of name, phone, travelDate, travellers, or null).`,
         input: JSON.stringify({ conversation: [...history, { role: 'user', content: message }], packageCatalog: catalog })
       });
       aiPowered = Boolean(answer);
