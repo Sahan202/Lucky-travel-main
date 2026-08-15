@@ -46,13 +46,14 @@ export default function Gallery() {
 
   const move = (direction: number) => setPage(current => Math.min(Math.max(current + direction, 0), Math.max(pages - 1, 0)));
 
-  return <section ref={sectionRef} id="gallery" className="relative isolate overflow-hidden bg-[#e8e1d4] py-24 text-slate-950 sm:py-32">
-    <div className="absolute inset-0 opacity-40 [background-image:radial-gradient(rgba(15,23,42,.18)_0.7px,transparent_0.7px)] [background-size:7px_7px]" />
-    <div className="absolute -right-20 top-20 font-serif text-[18rem] leading-none text-slate-950/[.025] sm:text-[28rem]">L</div>
+  return <section ref={sectionRef} id="gallery" className="relative isolate overflow-hidden bg-[#061018] py-24 text-white sm:py-32">
+    <div className="absolute inset-0 bg-[radial-gradient(circle_at_12%_20%,rgba(34,211,238,.1),transparent_28%),radial-gradient(circle_at_88%_78%,rgba(37,99,235,.1),transparent_30%)]" />
+    <div className="absolute inset-0 opacity-25 [background-image:radial-gradient(rgba(255,255,255,.16)_0.7px,transparent_0.7px)] [background-size:7px_7px]" />
+    <div className="absolute -right-20 top-20 font-serif text-[18rem] leading-none text-white/[.025] sm:text-[28rem]">L</div>
     <div className="relative mx-auto max-w-[1380px] px-5 sm:px-8 lg:px-12">
-      <div className="moments-heading grid gap-8 border-y border-slate-950/15 py-8 lg:grid-cols-[1fr_auto] lg:items-end">
-        <div><p className="flex items-center gap-3 text-[10px] font-black uppercase tracking-[.32em] text-cyan-800"><Camera size={15} /> Postcards from the island</p><h2 className="mt-4 text-5xl font-black leading-[.88] tracking-[-.065em] sm:text-7xl lg:text-[6.5rem]">Travel<br /><span className="font-serif font-normal italic text-cyan-800">moments.</span></h2></div>
-        <div className="max-w-md lg:pb-2"><p className="font-serif text-xl italic leading-8 text-slate-700 sm:text-2xl">“The best journeys leave you with stories no itinerary could have predicted.”</p><div className="mt-6 flex items-center gap-3 text-[9px] font-black uppercase tracking-[.25em] text-slate-500"><span className="h-px w-12 bg-slate-500" /> Captured across Sri Lanka</div></div>
+      <div className="moments-heading grid gap-8 border-y border-white/10 py-8 lg:grid-cols-[1fr_auto] lg:items-end">
+        <div><p className="flex items-center gap-3 text-[10px] font-black uppercase tracking-[.32em] text-cyan-300"><Camera size={15} /> Postcards from the island</p><h2 className="mt-4 text-5xl font-black leading-[.88] tracking-[-.065em] sm:text-7xl lg:text-[6.5rem]">Travel<br /><span className="font-serif font-normal italic text-cyan-200">moments.</span></h2></div>
+        <div className="max-w-md lg:pb-2"><p className="font-serif text-xl italic leading-8 text-slate-300 sm:text-2xl">“The best journeys leave you with stories no itinerary could have predicted.”</p><div className="mt-6 flex items-center gap-3 text-[9px] font-black uppercase tracking-[.25em] text-slate-500"><span className="h-px w-12 bg-cyan-300/50" /> Captured across Sri Lanka</div></div>
       </div>
 
       {visible.length ? <>
@@ -66,11 +67,11 @@ export default function Gallery() {
           </button>)}
         </div>
 
-        <div className="mt-8 flex flex-col gap-5 border-t border-slate-950/15 pt-6 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-4"><span className="font-serif text-3xl italic text-cyan-900">{String(page + 1).padStart(2, "0")}</span><div className="h-px w-16 bg-slate-950/25 sm:w-28"><div className="h-px bg-cyan-700 transition-all duration-500" style={{ width: `${((page + 1) / pages) * 100}%` }} /></div><span className="text-[10px] font-black tracking-[.2em] text-slate-500">{String(pages).padStart(2, "0")}</span></div>
-          <div className="flex gap-2"><button type="button" onClick={() => move(-1)} disabled={!page} aria-label="Previous moments" className="flex h-12 w-16 items-center justify-center rounded-full border border-slate-950/20 transition hover:border-cyan-800 hover:bg-cyan-800 hover:text-white disabled:cursor-not-allowed disabled:opacity-25"><ArrowLeft size={18} /></button><button type="button" onClick={() => move(1)} disabled={page >= pages - 1} aria-label="Next moments" className="flex h-12 w-24 items-center justify-center gap-2 rounded-full bg-slate-950 text-white transition hover:bg-cyan-800 disabled:cursor-not-allowed disabled:opacity-25"><span className="text-[9px] font-bold uppercase tracking-wider">Next</span><ArrowRight size={17} /></button></div>
+        <div className="mt-8 flex flex-col gap-5 border-t border-white/10 pt-6 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-4"><span className="font-serif text-3xl italic text-cyan-200">{String(page + 1).padStart(2, "0")}</span><div className="h-px w-16 bg-white/15 sm:w-28"><div className="h-px bg-cyan-300 transition-all duration-500" style={{ width: `${((page + 1) / pages) * 100}%` }} /></div><span className="text-[10px] font-black tracking-[.2em] text-slate-500">{String(pages).padStart(2, "0")}</span></div>
+          <div className="flex gap-2"><button type="button" onClick={() => move(-1)} disabled={!page} aria-label="Previous moments" className="flex h-12 w-16 items-center justify-center rounded-full border border-white/20 transition hover:border-cyan-300 hover:bg-cyan-300 hover:text-slate-950 disabled:cursor-not-allowed disabled:opacity-25"><ArrowLeft size={18} /></button><button type="button" onClick={() => move(1)} disabled={page >= pages - 1} aria-label="Next moments" className="flex h-12 w-24 items-center justify-center gap-2 rounded-full bg-cyan-300 text-slate-950 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-25"><span className="text-[9px] font-bold uppercase tracking-wider">Next</span><ArrowRight size={17} /></button></div>
         </div>
-      </> : <div className="mt-10 grid h-[540px] animate-pulse grid-cols-2 gap-3 md:grid-cols-12"><div className="col-span-2 bg-slate-950/10 md:col-span-5" /><div className="col-span-2 bg-slate-950/10 md:col-span-7" /></div>}
+      </> : <div className="mt-10 grid h-[540px] animate-pulse grid-cols-2 gap-3 md:grid-cols-12"><div className="col-span-2 bg-white/5 md:col-span-5" /><div className="col-span-2 bg-white/5 md:col-span-7" /></div>}
     </div>
 
     {selected && <div role="dialog" aria-modal="true" aria-label="Travel moment preview" onClick={() => setSelected(null)} className="fixed inset-0 z-[100] flex items-center justify-center bg-[#02070c]/95 p-4 backdrop-blur-xl sm:p-10">
