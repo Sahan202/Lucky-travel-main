@@ -94,12 +94,12 @@ export default function TravelPlanner() {
     <section id="ai-planner" className="relative overflow-hidden bg-slate-950 px-6 py-24 text-white">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.25),transparent_35%),radial-gradient(circle_at_bottom_right,rgba(168,85,247,0.18),transparent_35%)]" />
       <div className="relative mx-auto max-w-7xl">
-        <div className="mx-auto mb-12 max-w-3xl text-center">
-          <span className="mb-4 inline-flex items-center gap-2 rounded-full border border-cyan-400/30 bg-cyan-400/10 px-4 py-2 text-sm text-cyan-200">
-            <Sparkles size={16} /> AI Travel Planner
+        <div className="mx-auto mb-14 max-w-4xl text-center">
+          <span className="mb-5 inline-flex items-center gap-3 text-[10px] font-black uppercase tracking-[.32em] text-cyan-300">
+            <span className="h-px w-9 bg-cyan-300/70" /><Sparkles size={14} /> AI Travel Planner<span className="h-px w-9 bg-cyan-300/70" />
           </span>
-          <h2 className="text-4xl font-bold md:text-5xl">Build your perfect Sri Lanka journey</h2>
-          <p className="mt-4 text-slate-300">Tell us what you love. We will match your preferences with Lucky Travel packages and create a day-by-day plan.</p>
+          <h2 className="text-5xl font-black leading-[.9] tracking-[-.055em] sm:text-6xl md:text-7xl">Build your perfect<br /><span className="font-serif font-normal italic text-cyan-200">Sri Lanka journey.</span></h2>
+          <p className="mx-auto mt-5 max-w-2xl text-base leading-7 text-slate-300">Tell us what you love. We will match your preferences with Lucky Travel packages and create a day-by-day plan.</p>
         </div>
 
         <div className="mb-6 flex flex-wrap justify-center gap-3">

@@ -108,10 +108,10 @@ export default function TourPackages() {
     <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_15%,rgba(34,211,238,.16),transparent_32%),radial-gradient(circle_at_85%_55%,rgba(37,99,235,.13),transparent_34%)]" />
     <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-300/70 to-transparent" />
     <div className="relative z-10 mx-auto max-w-7xl px-6">
-      <div className="mx-auto mb-14 max-w-3xl text-center">
-        <span className="inline-flex items-center gap-2 rounded-full border border-cyan-400/25 bg-cyan-400/10 px-4 py-2 text-sm font-semibold text-cyan-200"><Sparkles size={16} /> Handpicked Sri Lanka experiences</span>
-        <h2 ref={titleRef} className="mt-5 text-4xl font-bold md:text-5xl">Featured Tours</h2>
-        <p className="mt-4 text-slate-300">Explore our most-loved journeys with clear routes, authentic highlights and flexible private travel.</p>
+      <div className="mx-auto mb-16 max-w-4xl text-center">
+        <span className="inline-flex items-center gap-3 text-[10px] font-black uppercase tracking-[.32em] text-cyan-300"><span className="h-px w-9 bg-cyan-300/70" /><Sparkles size={14} /> Handpicked Sri Lanka experiences<span className="h-px w-9 bg-cyan-300/70" /></span>
+        <h2 ref={titleRef} className="mt-5 text-5xl font-black leading-[.9] tracking-[-.055em] sm:text-6xl md:text-7xl">Featured <span className="font-serif font-normal italic text-cyan-200">tours.</span></h2>
+        <p className="mx-auto mt-5 max-w-2xl text-base leading-7 text-slate-300">Explore our most-loved journeys with clear routes, authentic highlights and flexible private travel.</p>
       </div>
 
       <div ref={cardsRef} className="grid gap-7 md:grid-cols-2 lg:grid-cols-3">
