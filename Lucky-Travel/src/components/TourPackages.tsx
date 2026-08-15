@@ -103,7 +103,7 @@ export default function TourPackages() {
 
   return <section id="tours" className="relative isolate overflow-hidden bg-[#020711] py-24 text-white">
     <img src={Sigiriya} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full scale-105 object-cover opacity-70 blur-[2px]" />
-    <video ref={videoRef} autoPlay loop muted playsInline preload="metadata" poster={Sigiriya} onCanPlay={() => setVideoReady(true)} onPlaying={() => setVideoReady(true)} onError={() => setVideoReady(false)} className={`absolute inset-x-0 top-0 h-[100svh] w-full object-contain object-top transition-opacity duration-1000 md:inset-0 md:h-full md:object-cover md:object-center ${videoReady ? 'opacity-100' : 'opacity-0'}`}><source src={bgVideo} type="video/mp4" /></video>
+    <video ref={videoRef} autoPlay loop muted playsInline preload="metadata" poster={Sigiriya} onCanPlay={() => setVideoReady(true)} onPlaying={() => setVideoReady(true)} onError={() => setVideoReady(false)} className={`absolute inset-0 hidden h-full w-full object-cover object-center transition-opacity duration-1000 md:block ${videoReady ? 'opacity-100' : 'opacity-0'}`}><source src={bgVideo} type="video/mp4" /></video>
     <div className="absolute inset-0 bg-gradient-to-b from-[#020711]/20 via-[#020711]/65 to-[#020711] md:bg-[linear-gradient(180deg,rgba(2,7,17,.38),rgba(2,7,17,.66)_52%,rgba(2,7,17,.92))]" />
     <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_15%,rgba(34,211,238,.16),transparent_32%),radial-gradient(circle_at_85%_55%,rgba(37,99,235,.13),transparent_34%)]" />
     <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-300/70 to-transparent" />
@@ -112,6 +112,7 @@ export default function TourPackages() {
         <span className="inline-flex items-center gap-2 rounded-full border border-cyan-400/25 bg-cyan-400/10 px-4 py-2 text-sm font-semibold text-cyan-200"><Sparkles size={16} /> Handpicked Sri Lanka experiences</span>
         <h2 ref={titleRef} className="mt-5 text-4xl font-bold md:text-5xl">Featured Tours</h2>
         <p className="mt-4 text-slate-300">Explore our most-loved journeys with clear routes, authentic highlights and flexible private travel.</p>
+        <div className="relative mt-7 overflow-hidden rounded-2xl border border-white/15 bg-black shadow-2xl shadow-cyan-950/40 md:hidden"><video autoPlay loop muted playsInline preload="metadata" poster={Sigiriya} className="aspect-video w-full object-contain"><source src={bgVideo} type="video/mp4" /></video><div className="pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-inset ring-cyan-300/10" /><div className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-black/50 to-transparent" /></div>
       </div>
 
       <div ref={cardsRef} className="grid gap-7 md:grid-cols-2 lg:grid-cols-3">
