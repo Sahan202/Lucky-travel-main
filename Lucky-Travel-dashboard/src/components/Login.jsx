@@ -43,14 +43,22 @@ export default function Login({ onLogin }) {
       <div className="absolute -left-32 top-0 h-96 w-96 rounded-full bg-cyan-500/10 blur-3xl" />
       <div className="absolute -right-32 bottom-0 h-96 w-96 rounded-full bg-teal-500/10 blur-3xl" />
       <div className="relative w-full max-w-md mx-4">
+        <div className="mb-6 flex items-center justify-center gap-3 sm:hidden">
+          <div className="h-12 w-12 overflow-hidden rounded-2xl border border-cyan-200/20 bg-white p-1 shadow-xl shadow-cyan-500/10">
+            <img src={logo} alt="Lucky Travel logo" className="h-full w-full rounded-xl object-contain" />
+          </div>
+          <div><p className="text-lg font-bold tracking-tight text-white">Lucky Travel</p><p className="text-[9px] font-bold uppercase tracking-[.2em] text-cyan-300">Journey studio</p></div>
+        </div>
         <div className="overflow-hidden rounded-3xl border border-white/10 bg-[#081321]/95 shadow-2xl shadow-black/30 backdrop-blur-xl">
           {/* Header */}
           <div className="border-b border-white/[0.06] bg-gradient-to-b from-cyan-400/[0.06] to-transparent p-8 text-center">
-            <div className="w-20 h-20 bg-white dark:bg-gray-800 rounded-full mx-auto mb-4 flex items-center justify-center shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-              <img src={logo} alt="Lucky Travel" className="w-full h-full object-cover" />
+            <div className="relative mx-auto mb-5 flex h-24 w-24 items-center justify-center rounded-[1.75rem] border border-cyan-200/25 bg-white p-2 shadow-2xl shadow-cyan-500/15">
+              <span className="absolute -inset-2 -z-10 rounded-[2rem] bg-cyan-300/10 blur-lg" />
+              <img src={logo} alt="Lucky Travel logo" className="h-full w-full rounded-2xl object-contain" />
             </div>
             <h1 className="text-3xl font-bold text-white">Lucky Travel</h1>
-            <p className="mt-2 text-sm uppercase tracking-[0.18em] text-cyan-300">Travel management studio</p>
+            <p className="mt-2 text-[11px] font-bold uppercase tracking-[0.22em] text-cyan-300">Travel management studio</p>
+            <p className="mx-auto mt-4 max-w-xs text-xs leading-5 text-slate-500">Curate remarkable Sri Lankan journeys and manage every traveller enquiry.</p>
           </div>
 
           {/* Form */}
