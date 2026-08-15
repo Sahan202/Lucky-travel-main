@@ -64,25 +64,17 @@ export default function Gallery() {
       );
 
       const images = imagesRef.current!.querySelectorAll('.gallery-item');
-      images.forEach((img, index) => {
-        const isEven = index % 2 === 0;
-        gsap.fromTo(
-          img,
-          { opacity: 0, x: isEven ? -100 : 100 },
-          {
-            opacity: 1,
-            x: 0,
-            duration: 0.8,
-            delay: index * 0.1,
-            scrollTrigger: {
-              trigger: img,
-              start: "top 90%",
-              end: "top 60%",
-              scrub: 1
-            }
-          }
-        );
-      });
+      gsap.fromTo(
+        images,
+        { y: 24 },
+        {
+          y: 0,
+          duration: 0.6,
+          stagger: 0.05,
+          ease: 'power2.out',
+          clearProps: 'transform'
+        }
+      );
     });
 
     return () => ctx.revert();
