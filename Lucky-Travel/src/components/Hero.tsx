@@ -56,7 +56,11 @@ export default function Hero() {
         <h1 className="max-w-5xl text-[clamp(3.2rem,8.4vw,8.3rem)] font-black leading-[.82] tracking-[-.065em]"><span className="block">Beyond</span><span className="block bg-gradient-to-r from-cyan-200 via-white to-amber-100 bg-clip-text pb-3 text-transparent">the ordinary.</span></h1>
         <div className="mt-7 grid max-w-3xl gap-7 border-l border-cyan-300/50 pl-5 sm:grid-cols-[1fr_auto] sm:items-end sm:pl-7">
           <div><p className="text-xs font-extrabold uppercase tracking-[.22em] text-cyan-300">{data.title} · {data.subtitle}</p><p className="mt-3 max-w-xl text-base leading-7 text-slate-200 sm:text-lg">{data.description}</p></div>
-          <a href="#ai-planner" className="group flex h-24 w-24 items-center justify-center rounded-full border border-white/30 bg-white/10 text-center text-[10px] font-black uppercase tracking-wider backdrop-blur-md transition duration-500 hover:scale-105 hover:border-cyan-300 hover:bg-cyan-300 hover:text-slate-950 sm:h-28 sm:w-28">Plan your<br />escape <ArrowUpRight size={17} className="ml-1 transition group-hover:rotate-45" /></a>
+          <a href="#ai-planner" aria-label="Plan your Sri Lanka escape" className="group relative flex h-28 w-28 shrink-0 items-center justify-center self-start overflow-hidden rounded-full border border-white/30 bg-slate-950/35 text-white shadow-[0_18px_55px_rgba(0,0,0,.28)] backdrop-blur-xl transition duration-500 hover:scale-105 hover:border-cyan-300 hover:bg-cyan-300 hover:text-slate-950 sm:h-32 sm:w-32 sm:self-auto">
+            <span className="absolute inset-2 rounded-full border border-white/10 transition group-hover:border-slate-950/15" />
+            <span className="relative text-center text-[10px] font-black uppercase leading-[1.45] tracking-[.16em]">Plan your<br /><span className="text-cyan-300 transition group-hover:text-slate-950">escape</span></span>
+            <ArrowUpRight size={15} className="absolute right-5 top-5 transition duration-500 group-hover:rotate-45 sm:right-6 sm:top-6" />
+          </a>
         </div>
       </div>
     </div>
