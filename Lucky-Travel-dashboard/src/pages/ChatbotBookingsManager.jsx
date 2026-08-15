@@ -22,6 +22,7 @@ export default function ChatbotBookingsManager() {
   const [status, setStatus] = useState('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
   const [selected, setSelected] = useState(null);
 
   const loadBookings = async () => {
@@ -50,6 +51,7 @@ export default function ChatbotBookingsManager() {
 
   const updateStatus = async (booking, nextStatus) => {
     try {
+      setNotice('');
       const token = localStorage.getItem('token');
       const response = await fetch(`${API_URL}/api/chatbot-bookings/${booking._id}/status`, {
         method: 'PUT',
@@ -64,6 +66,7 @@ export default function ChatbotBookingsManager() {
       if (!response.ok) throw new Error(updated.message || 'Unable to update status');
       setBookings(previous => previous.map(item => item._id === booking._id ? updated : item));
       setSelected(previous => previous?._id === booking._id ? updated : previous);
+      setNotice(updated.emailNotification?.sent ? `Status updated and email sent to ${booking.bookingDetails?.email}.` : `Status updated. ${updated.emailNotification?.reason || 'No email notification was sent.'}`);
     } catch (requestError) {
       setError(requestError.message);
     }
@@ -95,6 +98,7 @@ export default function ChatbotBookingsManager() {
 
     <div className="mb-5 flex gap-2 overflow-x-auto pb-2">{statuses.map(item => <button key={item} onClick={() => setStatus(item)} className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium capitalize ${status === item ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900' : 'bg-white text-gray-600 dark:bg-gray-800 dark:text-gray-300'}`}>{item}</button>)}</div>
     {error && <div className="mb-5 rounded-xl bg-red-50 p-4 text-red-700 dark:bg-red-900/20 dark:text-red-300">{error}</div>}
+    {notice && <div className="mb-5 rounded-xl border border-cyan-200 bg-cyan-50 p-4 text-cyan-800 dark:border-cyan-800 dark:bg-cyan-900/20 dark:text-cyan-200">{notice}</div>}
 
     <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
       {loading ? <div className="p-12 text-center text-gray-500">Loading chatbot bookings...</div> : bookings.length === 0 ? <div className="p-12 text-center"><div className="text-4xl">💬</div><p className="mt-3 font-semibold text-gray-700 dark:text-gray-200">No chatbot bookings found</p><p className="mt-1 text-sm text-gray-500">A record appears when a visitor asks the chatbot to book.</p></div> : <div className="overflow-x-auto"><table className="w-full min-w-[850px] text-left text-sm">

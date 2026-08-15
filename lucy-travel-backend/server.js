@@ -5,6 +5,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const crypto = require('node:crypto');
+const nodemailer = require('nodemailer');
 const User = require('./models/User');
 const multer = require('multer');
 const cloudinary = require('cloudinary').v2;
@@ -33,6 +34,47 @@ const upload = multer({ storage });
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+let mailTransporter;
+const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[character]));
+const statusMessages = {
+  collecting: 'We are still collecting the details needed for your booking.',
+  pending: 'Your booking request has been received and is being reviewed by our travel team.',
+  contacted: 'Our travel team has started following up on your request. Please check your phone or WhatsApp.',
+  confirmed: 'Great news! Your booking has been confirmed by Lucky Travel.',
+  completed: 'Your booking has been marked as completed. Thank you for choosing Lucky Travel!',
+  cancelled: 'Your booking has been cancelled. Please contact us if you would like a new arrangement.'
+};
+
+const sendBookingStatusEmail = async booking => {
+  const email = String(booking.bookingDetails?.email || '').trim();
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { sent: false, reason: 'No valid customer email' };
+  if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS) return { sent: false, reason: 'SMTP is not configured' };
+  if (!mailTransporter) {
+    mailTransporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: Number(process.env.SMTP_PORT || 587),
+      secure: String(process.env.SMTP_SECURE).toLowerCase() === 'true',
+      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
+    });
+  }
+  const customerName = booking.bookingDetails?.name || 'Traveller';
+  const packageName = booking.recommendedPackage?.name || booking.bookingDetails?.package || 'Sri Lanka tour';
+  const message = statusMessages[booking.status] || `Your booking status is now ${booking.status}.`;
+  const safeCustomerName = escapeHtml(customerName);
+  const safePackageName = escapeHtml(packageName);
+  const safeTravelDate = escapeHtml(booking.bookingDetails?.travelDate || 'To be confirmed');
+  const safeStatus = escapeHtml(booking.status);
+  const safeMessage = escapeHtml(message);
+  await mailTransporter.sendMail({
+    from: process.env.SMTP_FROM || `Lucky Travel <${process.env.SMTP_USER}>`,
+    to: email,
+    subject: `${packageName} booking update: ${booking.status}`,
+    text: `Hello ${customerName},\n\n${message}\n\nPackage: ${packageName}\nTravel date: ${booking.bookingDetails?.travelDate || 'To be confirmed'}\nStatus: ${booking.status}\n\nLucky Travel`,
+    html: `<div style="font-family:Arial,sans-serif;max-width:620px;margin:auto;background:#071321;color:#e2e8f0;padding:32px;border-radius:18px"><div style="color:#67e8f9;font-size:12px;font-weight:700;letter-spacing:2px">LUCKY TRAVEL</div><h1 style="color:#fff;margin:12px 0">Booking update</h1><p>Hello ${safeCustomerName},</p><p style="font-size:17px;line-height:1.7">${safeMessage}</p><div style="background:#0f2238;padding:18px;border-radius:12px;margin:24px 0"><b style="color:#fff">${safePackageName}</b><p style="margin:8px 0 0">Travel date: ${safeTravelDate}</p><p style="margin:8px 0 0;text-transform:capitalize;color:#67e8f9">Status: ${safeStatus}</p></div><p style="font-size:13px;color:#94a3b8">Our team will contact you if further details are required.</p></div>`
+  });
+  return { sent: true };
+};
 
 app.use(cors({
   origin: '*',
@@ -151,7 +193,7 @@ app.post('/api/tour-bookings', async (req, res) => {
       createdAt: now, updatedAt: now, statusUpdatedAt: now
     };
     const result = await db.collection('chatbotBookings').insertOne(booking);
-    res.status(201).json({ message: 'Your booking request has been received.', bookingId: String(result.insertedId) });
+    res.status(201).json({ message: 'Your booking request has been received.', bookingId: String(result.insertedId), trackingToken: booking.sessionId, status: booking.status });
   } catch (error) {
     console.error('Tour booking create error:', error);
     res.status(500).json({ message: 'Unable to submit your booking request.' });
@@ -182,7 +224,14 @@ app.put('/api/chatbot-bookings/:id/status', verifyToken, async (req, res) => {
       { returnDocument: 'after' }
     );
     if (!result) return res.status(404).json({ message: 'Booking not found' });
-    res.json(result);
+    let emailNotification;
+    try {
+      emailNotification = await sendBookingStatusEmail(result);
+    } catch (emailError) {
+      console.error('Booking status email error:', emailError.message);
+      emailNotification = { sent: false, reason: 'Email delivery failed' };
+    }
+    res.json({ ...result, emailNotification, statusMessage: statusMessages[result.status] });
   } catch (error) {
     console.error('Chatbot booking status error:', error);
     res.status(500).json({ message: 'Unable to update booking status' });
