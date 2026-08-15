@@ -6,6 +6,8 @@ import coast from "../assets/matt-dany-ePAa2c9XbtE-unsplash.jpg";
 import kandy from "../assets/dalada.jpg";
 import heritage from "../assets/buddh.jpg";
 import sigiriya from "../assets/sigiriya22.jpg";
+import ella from "../assets/ella.jpg";
+import mirissa from "../assets/Secret Beach Mirissa Sri Lanka.jpg";
 
 gsap.registerPlugin(ScrollTrigger);
 const scenes = [
@@ -13,6 +15,8 @@ const scenes = [
   { src: kandy, place: "Kandy", label: "Sacred stories", no: "02" },
   { src: heritage, place: "Ancient cities", label: "Living heritage", no: "03" },
   { src: sigiriya, place: "Sigiriya", label: "Above the clouds", no: "04" },
+  { src: ella, place: "Ella", label: "Tea country trails", no: "05" },
+  { src: mirissa, place: "Mirissa", label: "Secret coves", no: "06" },
 ];
 
 export default function Hero() {
@@ -71,6 +75,15 @@ export default function Hero() {
       <a href="#tours" className="flex items-center gap-3 py-5 pl-5 text-xs font-black uppercase tracking-[.18em] hover:text-cyan-300 lg:py-6 lg:pl-9">Explore <ArrowDown size={16} /></a>
     </div></div>
 
-    <div className="absolute right-[4%] top-[44%] z-20 hidden -translate-y-1/2 2xl:block"><div className="w-56 overflow-hidden rounded-[2rem] border border-white/20 bg-black/20 p-3 shadow-2xl backdrop-blur-xl"><img src={scenes[(active + 1) % scenes.length].src} alt="Next destination" className="h-28 w-full rounded-[1.35rem] object-cover" /><div className="flex items-center justify-between px-2 pb-2 pt-4"><div><p className="text-[9px] uppercase tracking-[.2em] text-white/45">Up next</p><p className="mt-1 text-sm font-bold">{scenes[(active + 1) % scenes.length].place}</p></div><MapPin size={18} className="text-cyan-300" /></div></div></div>
+    <div className="absolute right-[3%] top-[29%] z-20 hidden xl:block">
+      <button type="button" onClick={() => change((active + 1) % scenes.length)} className="group relative w-52 text-left 2xl:w-60">
+        <div className="absolute -inset-3 translate-x-2 translate-y-3 rounded-[2rem] border border-white/10 bg-white/5 transition duration-500 group-hover:translate-x-3 group-hover:translate-y-4" />
+        <div className="relative overflow-hidden rounded-[1.75rem] border border-white/20 bg-black/35 p-2.5 shadow-[0_30px_80px_rgba(0,0,0,.45)] backdrop-blur-xl">
+          <div className="relative h-24 overflow-hidden rounded-[1.25rem] 2xl:h-28"><img src={scenes[(active + 1) % scenes.length].src} alt={scenes[(active + 1) % scenes.length].place} className="h-full w-full object-cover transition duration-700 group-hover:scale-110" /><div className="absolute inset-0 bg-gradient-to-t from-black/45 to-transparent" /><span className="absolute right-3 top-3 rounded-full border border-white/20 bg-black/30 px-2 py-1 text-[8px] font-bold uppercase tracking-[.18em] backdrop-blur">Next story</span></div>
+          <div className="flex items-center justify-between px-2 pb-2 pt-3"><div><p className="text-[8px] font-bold uppercase tracking-[.24em] text-cyan-300">Curated discovery</p><p className="mt-1 text-sm font-bold">{scenes[(active + 1) % scenes.length].place} <span className="font-normal text-white/45">· {scenes[(active + 1) % scenes.length].label}</span></p></div><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/10 transition group-hover:border-cyan-300 group-hover:bg-cyan-300 group-hover:text-slate-950"><MapPin size={14} /></span></div>
+        </div>
+        <p className="mt-5 flex items-center justify-end gap-2 text-[8px] font-bold uppercase tracking-[.25em] text-white/45"><span className="h-px w-8 bg-cyan-300/60" /> Click to explore</p>
+      </button>
+    </div>
   </section>;
 }
