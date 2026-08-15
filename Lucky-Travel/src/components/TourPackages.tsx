@@ -86,9 +86,9 @@ export default function TourPackages() {
     window.open(`https://wa.me/94741105548?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer');
   };
 
-  return <section id="tours" className="relative overflow-hidden py-24 text-white">
-    <video autoPlay loop muted playsInline className="absolute inset-0 h-full w-full object-cover"><source src={bgVideo} type="video/mp4" /></video>
-    <div className="absolute inset-0 bg-black/55" />
+  return <section id="tours" className="relative overflow-hidden bg-black py-24 text-white">
+    <video autoPlay loop muted playsInline className="absolute inset-x-0 top-0 h-[100svh] w-full object-contain object-top md:inset-0 md:h-full md:object-cover md:object-center"><source src={bgVideo} type="video/mp4" /></video>
+    <div className="absolute inset-0 bg-gradient-to-b from-black/25 via-black/60 to-black md:bg-black/55" />
     <div className="relative z-10 mx-auto max-w-7xl px-6">
       <div className="mx-auto mb-14 max-w-3xl text-center">
         <span className="inline-flex items-center gap-2 rounded-full border border-cyan-400/25 bg-cyan-400/10 px-4 py-2 text-sm font-semibold text-cyan-200"><Sparkles size={16} /> Handpicked Sri Lanka experiences</span>
