@@ -66,7 +66,7 @@ export default function TourDetails() {
       const response = await fetch(`${API_URL}/api/tour-bookings`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...form, travellers: Number(form.travellers), packageId: tour?._id, packageName: tour?.name, destination: tour?.places, price: tour?.price, duration: tour?.duration }) });
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || 'Unable to submit booking.');
-      setSuccess('Booking request received! Our travel team will contact you shortly.');
+      setSuccess(data.emailNotification?.sent ? 'Booking request received! A confirmation email has been sent to you.' : `Booking request received! Our team will contact you shortly.${data.emailNotification?.reason ? ` (${data.emailNotification.reason})` : ''}`);
       if (data.trackingToken) {
         localStorage.setItem(`luckyTourTracking:${id}`, data.trackingToken);
         setTrackingToken(data.trackingToken);

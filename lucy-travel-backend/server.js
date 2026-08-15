@@ -46,10 +46,8 @@ const statusMessages = {
   cancelled: 'Your booking has been cancelled. Please contact us if you would like a new arrangement.'
 };
 
-const sendBookingStatusEmail = async booking => {
-  const email = String(booking.bookingDetails?.email || '').trim();
-  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { sent: false, reason: 'No valid customer email' };
-  if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS) return { sent: false, reason: 'SMTP is not configured' };
+const getMailTransporter = () => {
+  if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS) return null;
   if (!mailTransporter) {
     mailTransporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
@@ -58,6 +56,14 @@ const sendBookingStatusEmail = async booking => {
       auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
     });
   }
+  return mailTransporter;
+};
+
+const sendBookingStatusEmail = async booking => {
+  const email = String(booking.bookingDetails?.email || '').trim();
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { sent: false, reason: 'No valid customer email' };
+  const transporter = getMailTransporter();
+  if (!transporter) return { sent: false, reason: 'SMTP is not configured' };
   const customerName = booking.bookingDetails?.name || 'Traveller';
   const packageName = booking.recommendedPackage?.name || booking.bookingDetails?.package || 'Sri Lanka tour';
   const message = statusMessages[booking.status] || `Your booking status is now ${booking.status}.`;
@@ -66,12 +72,35 @@ const sendBookingStatusEmail = async booking => {
   const safeTravelDate = escapeHtml(booking.bookingDetails?.travelDate || 'To be confirmed');
   const safeStatus = escapeHtml(booking.status);
   const safeMessage = escapeHtml(message);
-  await mailTransporter.sendMail({
+  await transporter.sendMail({
     from: process.env.SMTP_FROM || `Lucky Travel <${process.env.SMTP_USER}>`,
     to: email,
     subject: `${packageName} booking update: ${booking.status}`,
     text: `Hello ${customerName},\n\n${message}\n\nPackage: ${packageName}\nTravel date: ${booking.bookingDetails?.travelDate || 'To be confirmed'}\nStatus: ${booking.status}\n\nLucky Travel`,
     html: `<div style="font-family:Arial,sans-serif;max-width:620px;margin:auto;background:#071321;color:#e2e8f0;padding:32px;border-radius:18px"><div style="color:#67e8f9;font-size:12px;font-weight:700;letter-spacing:2px">LUCKY TRAVEL</div><h1 style="color:#fff;margin:12px 0">Booking update</h1><p>Hello ${safeCustomerName},</p><p style="font-size:17px;line-height:1.7">${safeMessage}</p><div style="background:#0f2238;padding:18px;border-radius:12px;margin:24px 0"><b style="color:#fff">${safePackageName}</b><p style="margin:8px 0 0">Travel date: ${safeTravelDate}</p><p style="margin:8px 0 0;text-transform:capitalize;color:#67e8f9">Status: ${safeStatus}</p></div><p style="font-size:13px;color:#94a3b8">Our team will contact you if further details are required.</p></div>`
+  });
+  return { sent: true };
+};
+
+const sendNewBookingEmail = async booking => {
+  const email = String(booking.bookingDetails?.email || '').trim();
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { sent: false, reason: 'No valid customer email' };
+  const transporter = getMailTransporter();
+  if (!transporter) return { sent: false, reason: 'SMTP is not configured' };
+  const details = booking.bookingDetails || {};
+  const subjectCustomerName = String(details.name || 'Traveller').replace(/[\r\n]+/g, ' ');
+  const subjectPackageName = String(booking.recommendedPackage?.name || details.package || 'tour').replace(/[\r\n]+/g, ' ');
+  const customerName = escapeHtml(details.name || 'Traveller');
+  const packageName = escapeHtml(booking.recommendedPackage?.name || details.package || 'Sri Lanka tour');
+  const travelDate = escapeHtml(details.travelDate || 'To be confirmed');
+  const travellers = escapeHtml(details.travellers || 'To be confirmed');
+  const hotel = escapeHtml(details.hotelPreference || 'Flexible');
+  await transporter.sendMail({
+    from: process.env.SMTP_FROM || `Lucky Travel <${process.env.SMTP_USER}>`,
+    to: email,
+    subject: `Thank you, ${subjectCustomerName} — we received your ${subjectPackageName} request`,
+    text: `Hello ${details.name || 'Traveller'},\n\nThank you for choosing Lucky Travel! We received your booking request.\n\nPackage: ${booking.recommendedPackage?.name || details.package}\nTravel date: ${details.travelDate}\nTravellers: ${details.travellers}\nHotel preference: ${details.hotelPreference}\nStatus: Pending\n\nOur travel team will review availability and contact you with the final itinerary and quotation. No payment has been taken.\n\nLucky Travel`,
+    html: `<div style="margin:0;padding:34px 16px;background:#020711;font-family:Arial,sans-serif;color:#dbeafe"><div style="max-width:640px;margin:auto;overflow:hidden;border:1px solid #164e63;border-radius:24px;background:linear-gradient(145deg,#0b1c31,#06101e)"><div style="padding:34px;background:linear-gradient(135deg,#0891b2,#2563eb);color:white"><div style="font-size:12px;font-weight:800;letter-spacing:2.5px">LUCKY TRAVEL · SRI LANKA</div><h1 style="margin:14px 0 8px;font-size:30px">Thank you, ${customerName}!</h1><p style="margin:0;line-height:1.6;color:#e0f2fe">Your journey request has safely reached our travel team.</p></div><div style="padding:32px"><p style="margin-top:0;font-size:17px;line-height:1.7">We are excited to help you create an unforgettable Sri Lankan experience. Here is a summary of your request:</p><div style="margin:24px 0;padding:22px;border-radius:16px;background:#0f2238;border:1px solid #164e63"><div style="font-size:20px;font-weight:800;color:#fff">${packageName}</div><table style="width:100%;margin-top:16px;color:#cbd5e1;font-size:14px"><tr><td style="padding:7px 0">Travel date</td><td style="padding:7px 0;text-align:right;color:#fff;font-weight:700">${travelDate}</td></tr><tr><td style="padding:7px 0">Travellers</td><td style="padding:7px 0;text-align:right;color:#fff;font-weight:700">${travellers}</td></tr><tr><td style="padding:7px 0">Hotel preference</td><td style="padding:7px 0;text-align:right;color:#fff;font-weight:700">${hotel}</td></tr><tr><td style="padding:7px 0">Current status</td><td style="padding:7px 0;text-align:right;color:#67e8f9;font-weight:800">PENDING REVIEW</td></tr></table></div><h2 style="font-size:18px;color:#fff">What happens next?</h2><p style="font-size:14px;line-height:1.7;color:#94a3b8">Our team will check availability, refine your itinerary and contact you with the final quotation. No payment has been taken at this stage.</p><div style="margin-top:28px;padding-top:20px;border-top:1px solid #1e3a52;font-size:12px;color:#64748b">Thank you for choosing Lucky Travel. We look forward to welcoming you to Sri Lanka.</div></div></div></div>`
   });
   return { sent: true };
 };
@@ -193,7 +222,14 @@ app.post('/api/tour-bookings', async (req, res) => {
       createdAt: now, updatedAt: now, statusUpdatedAt: now
     };
     const result = await db.collection('chatbotBookings').insertOne(booking);
-    res.status(201).json({ message: 'Your booking request has been received.', bookingId: String(result.insertedId), trackingToken: booking.sessionId, status: booking.status });
+    let emailNotification;
+    try {
+      emailNotification = await sendNewBookingEmail(booking);
+    } catch (emailError) {
+      console.error('New booking email error:', emailError.message);
+      emailNotification = { sent: false, reason: 'Confirmation email delivery failed' };
+    }
+    res.status(201).json({ message: 'Your booking request has been received.', bookingId: String(result.insertedId), trackingToken: booking.sessionId, status: booking.status, emailNotification });
   } catch (error) {
     console.error('Tour booking create error:', error);
     res.status(500).json({ message: 'Unable to submit your booking request.' });
