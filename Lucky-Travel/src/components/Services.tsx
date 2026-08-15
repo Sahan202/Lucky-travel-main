@@ -6,17 +6,30 @@ import culture from "../assets/promodhya-abeysekara-gjd-7_3Ek_w-unsplash.jpg";
 import wildlife from "../assets/tommaso-delton-_sFOJHDmO6A-unsplash.jpg";
 
 interface Service { _id: string; title: string; description: string; details?: string[]; }
+type OnlinePhoto = { url: string; source: string };
 
 const visuals = [
-  { image: ella, eyebrow: "Highland soul", icon: Route },
-  { image: coast, eyebrow: "Indian Ocean", icon: Compass },
-  { image: culture, eyebrow: "Living heritage", icon: Hotel },
+  { image: ella, eyebrow: "Private island journeys", icon: Route },
+  { image: coast, eyebrow: "Arrival in style", icon: Compass },
+  { image: culture, eyebrow: "Designed around you", icon: Hotel },
   { image: wildlife, eyebrow: "Untamed island", icon: ShieldCheck },
 ];
+
+const imageTitleForService = (title: string) => {
+  const value = title.toLowerCase();
+  if (value.includes("airport") || value.includes("transfer")) return "Bandaranaike International Airport";
+  if (value.includes("private") || value.includes("guide") || value.includes("tour")) return "Sigiriya";
+  if (value.includes("custom") || value.includes("package") || value.includes("plan")) return "Ella, Sri Lanka";
+  if (value.includes("wildlife") || value.includes("safari")) return "Yala National Park";
+  if (value.includes("hotel") || value.includes("stay")) return "Galle Fort";
+  if (value.includes("beach") || value.includes("coast")) return "Mirissa";
+  return "Tourism in Sri Lanka";
+};
 
 export default function Services() {
   const [services, setServices] = useState<Service[]>([]);
   const [active, setActive] = useState(0);
+  const [photos, setPhotos] = useState<Record<string, OnlinePhoto>>({});
 
   useEffect(() => {
     fetch(`${import.meta.env.VITE_API_URL}/api/services`)
@@ -24,6 +37,21 @@ export default function Services() {
       .then(data => setServices(Array.isArray(data) ? data : []))
       .catch(error => console.error("Error fetching services:", error));
   }, []);
+
+  useEffect(() => {
+    if (!services.length) return;
+    const controller = new AbortController();
+    Promise.all(services.map(async item => {
+      const title = imageTitleForService(item.title);
+      const params = new URLSearchParams({ action: "query", format: "json", origin: "*", prop: "pageimages", piprop: "thumbnail", pithumbsize: "1920", redirects: "1", titles: title });
+      const response = await fetch(`https://en.wikipedia.org/w/api.php?${params}`, { signal: controller.signal });
+      if (!response.ok) return null;
+      const payload = await response.json();
+      const page = Object.values(payload.query?.pages || {})[0] as { thumbnail?: { source?: string } } | undefined;
+      return page?.thumbnail?.source ? [item._id, { url: page.thumbnail.source, source: `https://en.wikipedia.org/wiki/${encodeURIComponent(title.replace(/ /g, "_"))}` }] as const : null;
+    })).then(results => setPhotos(Object.fromEntries(results.filter(Boolean) as readonly (readonly [string, OnlinePhoto])[]))).catch(error => { if (error.name !== "AbortError") console.error("Service photos:", error); });
+    return () => controller.abort();
+  }, [services]);
 
   const service = services[active];
   const visual = visuals[active % visuals.length];
@@ -44,10 +72,11 @@ export default function Services() {
 
       {service ? <div className="mt-12 grid gap-7 lg:grid-cols-[1.35fr_.65fr]">
         <div className="group relative min-h-[520px] overflow-hidden rounded-[2rem] border border-white/10 bg-slate-900 shadow-[0_35px_100px_rgba(0,0,0,.35)] sm:min-h-[590px]">
-          <img key={service._id} src={visual.image} alt={service.title} className="absolute inset-0 h-full w-full object-cover transition duration-[1400ms] group-hover:scale-105" />
+          <img key={service._id} src={photos[service._id]?.url || visual.image} onError={event => { event.currentTarget.onerror = null; event.currentTarget.src = visual.image; }} referrerPolicy="no-referrer" alt={service.title} className="absolute inset-0 h-full w-full object-cover transition duration-[1400ms] group-hover:scale-105" />
           <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(2,8,13,.08),rgba(2,8,13,.22)_42%,rgba(2,8,13,.96))]" />
           <div className="absolute left-6 top-6 flex h-14 w-14 items-center justify-center rounded-full border border-white/25 bg-black/20 backdrop-blur-xl sm:left-8 sm:top-8"><visual.icon size={22} /></div>
           <div className="absolute right-6 top-6 rounded-full border border-white/20 bg-black/20 px-4 py-2 text-[9px] font-bold uppercase tracking-[.22em] backdrop-blur-xl sm:right-8 sm:top-8">{visual.eyebrow}</div>
+          {photos[service._id] && <a href={photos[service._id].source} target="_blank" rel="noreferrer" className="absolute right-7 top-20 z-20 rounded-full bg-black/35 px-3 py-1.5 text-[8px] tracking-wide text-white/60 backdrop-blur transition hover:text-white sm:right-9">Location photo · Wikipedia</a>}
           <div className="absolute inset-x-0 bottom-0 p-6 sm:p-10">
             <p className="text-[10px] font-bold uppercase tracking-[.28em] text-cyan-300">Signature {String(active + 1).padStart(2, "0")}</p>
             <h3 className="mt-3 max-w-3xl text-3xl font-black tracking-[-.035em] sm:text-5xl">{service.title}</h3>
