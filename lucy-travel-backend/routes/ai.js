@@ -110,7 +110,8 @@ const requestGemini = async ({ instructions, input }) => {
               bookingDetails: {
                 type: 'OBJECT',
                 properties: {
-                  name: { type: 'STRING' }, phone: { type: 'STRING' }, travelDate: { type: 'STRING' }, travellers: { type: 'INTEGER' }
+                  name: { type: 'STRING' }, phone: { type: 'STRING' }, travelDate: { type: 'STRING' }, travellers: { type: 'INTEGER' },
+                  destination: { type: 'STRING' }, package: { type: 'STRING' }
                 }
               },
               nextQuestion: { type: 'STRING' },
@@ -396,7 +397,9 @@ router.post('/chat', async (req, res) => {
 
 Answer the exact question directly in the first sentence. Give factual, practical information from your Sri Lanka travel knowledge. When relevant, cover how to get there from the user's starting point, approximate travel time and distance, main things to see and do, best season or time of day, recommended visit duration or nights, nearby places, suitable traveller types and one practical tip. If a name is genuinely ambiguous, ask for the district or nearest town. Explain that live weather, closures, transport schedules, ticket prices and availability should be confirmed because they can change.
 
-Do not discuss sales or redirect the traveller to a different destination. Do not ask for budget, dates or personal details unless they are necessary to answer the question. Use the conversation history for follow-up questions. Return valid JSON only with keys: reply, language, recommendations, needsHuman, bookingDetails, nextQuestion, requestedField. recommendations must always be an empty array, needsHuman must be false unless the user asks for an agent, bookingDetails must be an empty object, and requestedField must be null.`;
+Do not redirect the traveller to a different destination. Use the conversation history for follow-up questions. If the traveller asks to book, reserve or arrange a trip, put the exact destination they requested in bookingDetails.destination (for example "Arugam Bay"), preserve any name, phone, travelDate and travellers they supplied, and ask only for the next missing booking field. Never substitute a previously discussed recommendation for the traveller's newly requested destination. For ordinary destination questions, bookingDetails must be an empty object and do not ask for personal details.
+
+Return valid JSON only with keys: reply, language, recommendations, needsHuman, bookingDetails, nextQuestion, requestedField. recommendations must always be an empty array. needsHuman must be false unless the user asks for an agent. requestedField must be null or one of name, phone, travelDate, travellers.`;
     let answer = null;
     let aiPowered = false;
 
@@ -437,7 +440,10 @@ Do not discuss sales or redirect the traveller to a different destination. Do no
       const shouldSave = Boolean(existing || bookingIntent || answer.needsHuman || Object.keys(details).length);
 
       if (shouldSave) {
-        const recommendedPackage = answer.recommendations?.[0] || existing?.recommendedPackage || null;
+        const requestedDestination = cleanText(details.destination);
+        const recommendedPackage = answer.recommendations?.[0]
+          || (bookingIntent && requestedDestination ? null : existing?.recommendedPackage)
+          || null;
         const hasRequiredDetails = Boolean(details.name && details.phone && details.travelDate && details.travellers);
         const now = new Date();
         const result = await collection.findOneAndUpdate(
