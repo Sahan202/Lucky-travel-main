@@ -65,8 +65,12 @@ export default function AIChatbot() {
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.message);
-      const content = [data.reply, data.nextQuestion].filter(Boolean).join('\n\n');
-      setMessages(previous => [...previous, { role: 'assistant', content, recommendations: data.recommendations || [], whatsappUrl: data.needsHuman ? data.whatsappUrl : undefined, requestedField: data.requestedField }]);
+      const dateQuestion = `${data.reply || ''} ${data.nextQuestion || ''}`;
+      const requestedField = data.requestedField || (/travel date|ගමන් දිනය|பயணத் தேதி/i.test(dateQuestion) ? 'travelDate' : null);
+      const content = requestedField === 'travelDate'
+        ? (data.reply || data.nextQuestion)
+        : [data.reply, data.nextQuestion].filter(Boolean).join('\n\n');
+      setMessages(previous => [...previous, { role: 'assistant', content, recommendations: data.recommendations || [], whatsappUrl: data.needsHuman ? data.whatsappUrl : undefined, requestedField }]);
     } catch {
       setMessages(previous => [...previous, { role: 'assistant', content: 'Sorry, I could not connect right now. Please use WhatsApp to contact our team.', whatsappUrl: 'https://wa.me/94741105548' }]);
     } finally { setLoading(false); }
