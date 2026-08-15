@@ -1,5 +1,5 @@
 import { FormEvent, useState } from 'react';
-import { CalendarDays, LoaderCircle, MapPin, Sparkles, Users } from 'lucide-react';
+import { CalendarDays, Compass, Hotel, Lightbulb, LoaderCircle, MapPin, Navigation, Sparkles, Sun, Users } from 'lucide-react';
 import SriLankaDestinationMap from './SriLankaDestinationMap';
 import AIActivityFinder from './AIActivityFinder';
 
@@ -17,7 +17,22 @@ type ItineraryDay = {
   day: number;
   title: string;
   activities: string[];
+  morning?: string;
+  afternoon?: string;
+  evening?: string;
+  transfer?: string;
   overnight?: string;
+  nearbyIncluded?: string[];
+};
+
+type DestinationGuide = {
+  location: string;
+  recommendedDays: number;
+  overview: string;
+  activities: string[];
+  nearbyPlaces: { name: string; distance: string; travelTime: string; whyVisit: string }[];
+  bestTime: string;
+  practicalTip: string;
 };
 
 type PlannerResult = {
@@ -27,6 +42,7 @@ type PlannerResult = {
     estimatedCost: string;
     recommendedPackage?: PackageRecommendation | string | null;
     stays?: { location: string; nights: number; selectedPlaces?: string[] }[];
+    destinationGuides?: DestinationGuide[];
     days: ItineraryDay[];
     note?: string;
   };
@@ -138,7 +154,8 @@ export default function TravelPlanner() {
               <p className="mt-3 text-slate-600">{result.itinerary.summary}</p>
               <div className="my-6 rounded-2xl bg-slate-950 p-5 text-white"><p className="text-sm text-slate-400">Estimated cost</p><p className="mt-1 text-2xl font-bold text-cyan-300">{result.itinerary.estimatedCost}</p></div>
               {result.itinerary.stays && result.itinerary.stays.length > 0 && <div className="mb-7"><h4 className="text-lg font-bold">Your overnight plan</h4><div className="mt-3 grid gap-3 sm:grid-cols-2">{result.itinerary.stays.map(stay => <div key={stay.location} className="rounded-xl border border-cyan-100 bg-cyan-50 p-4"><div className="flex items-center justify-between"><span className="font-bold text-slate-900">{stay.location}</span><span className="rounded-full bg-cyan-600 px-3 py-1 text-xs font-bold text-white">{stay.nights} {stay.nights === 1 ? 'night' : 'nights'}</span></div>{stay.selectedPlaces && stay.selectedPlaces.length > 0 && <p className="mt-2 text-xs text-slate-500">For: {stay.selectedPlaces.join(', ')}</p>}</div>)}</div></div>}
-              <div className="space-y-4">{result.itinerary.days?.map(day => <div key={day.day} className="relative border-l-2 border-cyan-200 pl-6"><span className="absolute -left-3 top-0 flex h-6 w-6 items-center justify-center rounded-full bg-cyan-500 text-xs font-bold text-white">{day.day}</span><h4 className="text-lg font-bold">Day {day.day} — {day.title}</h4><ul className="mt-2 space-y-1 text-sm text-slate-600">{day.activities?.map(activity => <li key={activity}>• {activity}</li>)}</ul>{day.overnight && <p className="mt-2 text-xs font-semibold text-cyan-700">Overnight: {day.overnight}</p>}</div>)}</div>
+              {result.itinerary.destinationGuides && result.itinerary.destinationGuides.length > 0 && <div className="mb-8"><div className="flex items-center gap-2"><Compass className="text-cyan-600" size={21} /><h4 className="text-lg font-bold">Explore each destination</h4></div><p className="mt-1 text-sm text-slate-500">Activities, nearby attractions and the ideal time to spend at every selected place.</p><div className="mt-4 space-y-4">{result.itinerary.destinationGuides.map(guide => <article key={guide.location} className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50"><div className="flex flex-wrap items-center justify-between gap-2 bg-slate-900 px-5 py-4 text-white"><div className="flex items-center gap-2"><MapPin className="text-cyan-300" size={18} /><h5 className="font-bold">{guide.location}</h5></div><span className="rounded-full bg-cyan-400/15 px-3 py-1 text-xs font-semibold text-cyan-200">{guide.recommendedDays} {guide.recommendedDays === 1 ? 'day' : 'days'} recommended</span></div><div className="p-5"><p className="text-sm leading-6 text-slate-600">{guide.overview}</p>{guide.activities?.length > 0 && <div className="mt-4"><p className="text-xs font-bold uppercase tracking-wider text-slate-500">Things to do</p><div className="mt-2 flex flex-wrap gap-2">{guide.activities.map(activity => <span key={activity} className="rounded-full bg-cyan-50 px-3 py-1.5 text-xs font-semibold text-cyan-800">{activity}</span>)}</div></div>}{guide.nearbyPlaces?.length > 0 && <div className="mt-5"><p className="text-xs font-bold uppercase tracking-wider text-slate-500">Nearby places worth adding</p><div className="mt-2 grid gap-2 sm:grid-cols-2">{guide.nearbyPlaces.map(place => <div key={`${guide.location}-${place.name}`} className="rounded-xl border border-slate-200 bg-white p-3"><p className="font-bold text-slate-800">{place.name}</p><p className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-cyan-700"><Navigation size={12} />{place.distance} · {place.travelTime}</p><p className="mt-2 text-xs leading-5 text-slate-500">{place.whyVisit}</p></div>)}</div></div>}<div className="mt-4 grid gap-2 sm:grid-cols-2"><p className="flex gap-2 rounded-xl bg-amber-50 p-3 text-xs text-amber-900"><Sun className="shrink-0" size={16} />{guide.bestTime}</p><p className="flex gap-2 rounded-xl bg-blue-50 p-3 text-xs text-blue-900"><Lightbulb className="shrink-0" size={16} />{guide.practicalTip}</p></div></div></article>)}</div></div>}
+              <div><div className="mb-4 flex items-center gap-2"><CalendarDays className="text-cyan-600" size={21} /><h4 className="text-lg font-bold">Your day-by-day route</h4></div><div className="space-y-4">{result.itinerary.days?.map(day => <div key={day.day} className="relative rounded-2xl border border-slate-200 bg-white p-5 pl-8 shadow-sm"><span className="absolute -left-3 top-5 flex h-8 w-8 items-center justify-center rounded-full bg-cyan-500 text-xs font-bold text-white shadow">{day.day}</span><h4 className="text-lg font-bold">Day {day.day} — {day.title}</h4>{day.transfer && <p className="mt-2 flex items-center gap-2 rounded-lg bg-violet-50 px-3 py-2 text-xs font-semibold text-violet-800"><Navigation size={14} />{day.transfer}</p>}<div className="mt-3 grid gap-2"><p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-slate-700"><strong>Morning:</strong> {day.morning || day.activities?.[0]}</p><p className="rounded-lg bg-cyan-50 px-3 py-2 text-sm text-slate-700"><strong>Afternoon:</strong> {day.afternoon || day.activities?.[1]}</p><p className="rounded-lg bg-indigo-50 px-3 py-2 text-sm text-slate-700"><strong>Evening:</strong> {day.evening || day.activities?.[2]}</p></div>{day.nearbyIncluded && day.nearbyIncluded.length > 0 && <p className="mt-3 text-xs text-slate-500"><strong>Nearby included:</strong> {day.nearbyIncluded.join(', ')}</p>}{day.overnight && <p className="mt-3 flex items-center gap-2 text-xs font-semibold text-cyan-700"><Hotel size={14} />Overnight: {day.overnight}</p>}</div>)}</div></div>
               {result.recommendations.length > 0 && <div className="mt-7"><h4 className="text-lg font-bold">Recommended packages</h4><div className="mt-3 grid gap-3 sm:grid-cols-2">{result.recommendations.slice(0, 2).map(item => <a key={item.id} href={`/tour/${item.id}`} className="rounded-xl border border-slate-200 p-4 transition hover:border-cyan-400"><p className="font-bold">{item.name}</p><p className="mt-1 text-sm text-cyan-700">{item.duration} · {item.price}</p></a>)}</div></div>}
               {result.itinerary.note && <p className="mt-6 text-xs text-slate-500">{result.itinerary.note}</p>}
             </div>}

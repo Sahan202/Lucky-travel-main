@@ -98,7 +98,7 @@ const extractOpenAIResponseText = data => {
     .join('');
 };
 
-const requestGemini = async ({ instructions, input, responseSchema }) => {
+const requestGemini = async ({ instructions, input, responseSchema, maxOutputTokens = 2048 }) => {
   if (!process.env.GEMINI_API_KEY) return null;
 
   const model = process.env.GEMINI_MODEL || 'gemini-flash-lite-latest';
@@ -115,7 +115,7 @@ const requestGemini = async ({ instructions, input, responseSchema }) => {
         contents: [{ role: 'user', parts: [{ text: input }] }],
         generationConfig: {
           responseMimeType: 'application/json',
-          maxOutputTokens: 2048,
+          maxOutputTokens,
           responseSchema: responseSchema || {
             type: 'OBJECT',
             required: ['reply', 'language', 'recommendations', 'needsHuman', 'bookingDetails', 'nextQuestion'],
@@ -272,13 +272,27 @@ const fallbackItinerary = (details, recommendations) => {
     estimatedCost: details.budget ? `$${Math.round(Number(details.budget) * 0.9)} - $${details.budget}` : 'Contact us for a quotation',
     recommendedPackage: recommendations[0] || null,
     stays,
+    destinationGuides: selectedPlaces.map(location => ({
+      location,
+      recommendedDays: Math.max(1, stays.find(stay => stay.selectedPlaces?.includes(location))?.nights || 1),
+      overview: `Explore the highlights of ${location} at a comfortable pace.`,
+      activities: (Array.isArray(details.selectedActivities) ? details.selectedActivities : []).filter(activity => activity.includes(location)).map(activity => activity.split(' — ')[0]).slice(0, 4),
+      nearbyPlaces: [],
+      bestTime: 'Confirm seasonal conditions before travelling',
+      practicalTip: 'Start early and confirm live opening times, weather and transport conditions.'
+    })),
     days: Array.from({ length: days }, (_, index) => ({
       day: index + 1,
       title: index === 0 ? `${start} → ${places[0] || 'Colombo'}` : places[index] || places[index % Math.max(places.length, 1)] || 'Sri Lanka Highlights',
       activities: index === 0
         ? ['Airport or hotel pickup', 'Private transfer', 'Hotel check-in and welcome briefing']
         : ['Guided sightseeing', 'Local cultural experience', 'Leisure time'],
-      overnight: places[index] || places[0] || 'Colombo'
+      morning: index === 0 ? 'Pickup and transfer' : 'Main attraction visit',
+      afternoon: 'Local experience and nearby sightseeing',
+      evening: 'Leisure time and dinner',
+      transfer: index === 0 ? `${start} to ${places[0] || 'Colombo'}` : '',
+      overnight: places[index] || places[0] || 'Colombo',
+      nearbyIncluded: []
     })),
     note: 'This is an initial plan. Confirm availability and the final quotation with Lucky Travel.'
   };
@@ -335,6 +349,7 @@ router.post('/activities', async (req, res) => {
       const answer = await requestAI({
         instructions: `You are Lucky Travel's specialist activity and destination recommender for foreign visitors to Sri Lanka. If destinations are supplied, prioritize realistic activities at or near them and also suggest useful nearby alternatives. If no destination is supplied, use the selected activity interests to recommend the best Sri Lankan locations where the traveller can do them. Prefer exact location names from the verified activity catalog so the website can add them to the map. Respect traveller style, trip dates and physical intensity. Clearly distinguish seasonal or weather-dependent activities and never claim confirmed availability. Return valid JSON only with one key: recommendations. recommendations must be an array of 5-8 objects with keys activity, location, type, why, duration, bestTime. Respond in ${details.language || 'English'}.`,
         input: JSON.stringify({ traveller: details, verifiedActivityCatalog: activityCatalog }),
+        maxOutputTokens: 4096,
         responseSchema: {
           type: 'OBJECT',
           required: ['recommendations'],
@@ -385,8 +400,36 @@ router.post('/planner', async (req, res) => {
     let aiPowered = false;
     try {
       itinerary = await requestAI({
-        instructions: `You are Lucky Travel's expert Sri Lanka route planner. Every customer-selected destination and selected activity must be included where practical and placed on a suitable day at its specified location. Optimize the route geographically from the starting location and fit it exactly into the supplied travel dates. Calculate total days inclusively and total nights as days minus one. Allocate those nights across sensible nearby stay bases (for example Galle Fort and Unawatuna can share Galle; Horton Plains can use Nuwara Eliya). Do not allocate more nights than the trip contains. Use only the supplied package catalog for package facts and prices. Return valid JSON only with keys: title, summary, estimatedCost, recommendedPackage, stays, days, note. stays must be an array of {location, nights, selectedPlaces}. days must contain exactly the trip's number of days and be an array of {day, title, activities, overnight}. Mention travel/transfer days realistically. Never claim confirmed availability. Keep within the customer's USD budget. Respond in ${details.language || 'English'}.`,
-        input: JSON.stringify({ customer: details, packageCatalog: catalog })
+        instructions: `You are Lucky Travel's expert Sri Lanka route planner. Create a practical personalized journey for exactly the supplied date range. Include every customer-selected destination and selected activity where geographically possible. Optimize the route from the starting location and avoid unrealistic backtracking.
+
+For each selected destination, provide a separate destination guide: what the traveller can do there, the sensible number of days, best time, practical advice, and 3-5 genuinely nearby attractions that fit the available days. Each nearby place must include approximate distance, travel time and why it is worth visiting. Do not suggest a distant place as nearby.
+
+Create exactly one day object per calendar day. Clearly separate morning, afternoon and evening, mention transfers and approximate drive/train time, state the overnight base, and identify nearby places included that day. Calculate total nights as days minus one and distribute them realistically across stay bases. Never allocate more nights than available. Respect selected hotel style, traveller count, interests, chosen activities and USD budget. Use only the supplied package catalog for package names and prices. Never claim live availability, exact transport schedules or guaranteed weather. Respond in ${details.language || 'English'} and return only the required JSON structure.`,
+        input: JSON.stringify({ customer: details, packageCatalog: catalog }),
+        maxOutputTokens: 8192,
+        responseSchema: {
+          type: 'OBJECT',
+          required: ['title', 'summary', 'estimatedCost', 'stays', 'destinationGuides', 'days', 'note'],
+          properties: {
+            title: { type: 'STRING' }, summary: { type: 'STRING' }, estimatedCost: { type: 'STRING' },
+            recommendedPackage: { type: 'STRING' }, note: { type: 'STRING' },
+            stays: { type: 'ARRAY', items: { type: 'OBJECT', required: ['location', 'nights', 'selectedPlaces'], properties: {
+              location: { type: 'STRING' }, nights: { type: 'INTEGER' }, selectedPlaces: { type: 'ARRAY', items: { type: 'STRING' } }
+            } } },
+            destinationGuides: { type: 'ARRAY', items: { type: 'OBJECT', required: ['location', 'recommendedDays', 'overview', 'activities', 'nearbyPlaces', 'bestTime', 'practicalTip'], properties: {
+              location: { type: 'STRING' }, recommendedDays: { type: 'INTEGER' }, overview: { type: 'STRING' },
+              activities: { type: 'ARRAY', items: { type: 'STRING' } }, bestTime: { type: 'STRING' }, practicalTip: { type: 'STRING' },
+              nearbyPlaces: { type: 'ARRAY', items: { type: 'OBJECT', required: ['name', 'distance', 'travelTime', 'whyVisit'], properties: {
+                name: { type: 'STRING' }, distance: { type: 'STRING' }, travelTime: { type: 'STRING' }, whyVisit: { type: 'STRING' }
+              } } }
+            } } },
+            days: { type: 'ARRAY', items: { type: 'OBJECT', required: ['day', 'title', 'activities', 'morning', 'afternoon', 'evening', 'transfer', 'overnight', 'nearbyIncluded'], properties: {
+              day: { type: 'INTEGER' }, title: { type: 'STRING' }, activities: { type: 'ARRAY', items: { type: 'STRING' } },
+              morning: { type: 'STRING' }, afternoon: { type: 'STRING' }, evening: { type: 'STRING' }, transfer: { type: 'STRING' },
+              overnight: { type: 'STRING' }, nearbyIncluded: { type: 'ARRAY', items: { type: 'STRING' } }
+            } } }
+          }
+        }
       });
       if (itinerary && (!Array.isArray(itinerary.stays) || !itinerary.stays.length)) itinerary.stays = buildStayPlan(details);
       aiPowered = Boolean(itinerary);
