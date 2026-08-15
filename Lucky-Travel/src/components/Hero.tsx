@@ -1,117 +1,72 @@
 import { useEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { ArrowRight, CheckCircle2, MapPin, ShieldCheck, Star } from 'lucide-react';
-import Homebg from "../assets/matt-dany-ePAa2c9XbtE-unsplash.jpg";
-import Dalada from "../assets/dalada.jpg";
-import Budda from "../assets/buddh.jpg";
-import Sigiri2 from "../assets/sigiriya22.jpg";    
+import { ArrowDown, ArrowUpRight, Compass, MapPin, Sparkles } from "lucide-react";
+import coast from "../assets/matt-dany-ePAa2c9XbtE-unsplash.jpg";
+import kandy from "../assets/dalada.jpg";
+import heritage from "../assets/buddh.jpg";
+import sigiriya from "../assets/sigiriya22.jpg";
 
 gsap.registerPlugin(ScrollTrigger);
-
-const images = [
-  { src: Homebg, title: "Discover Sri Lanka", subtitle: "Paradise Island" },
-  { src: Dalada, title: "Sacred Temple", subtitle: "Temple of the Tooth" },
-  { src: Budda, title: "Ancient Heritage", subtitle: "Buddhist Culture" },
-  { src: Sigiri2, title: "Sigiriya Rock", subtitle: "8th Wonder of the World" }
+const scenes = [
+  { src: coast, place: "Southern coast", label: "Wild shores", no: "01" },
+  { src: kandy, place: "Kandy", label: "Sacred stories", no: "02" },
+  { src: heritage, place: "Ancient cities", label: "Living heritage", no: "03" },
+  { src: sigiriya, place: "Sigiriya", label: "Above the clouds", no: "04" },
 ];
 
 export default function Hero() {
-  const bgRef = useRef<HTMLImageElement>(null);
-  const detailsRef = useRef<HTMLDivElement>(null);
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [imageDetails, setImageDetails] = useState({ title: images[0].title, subtitle: images[0].subtitle });
-  const [heroData, setHeroData] = useState({
-    title: 'Luxury Travel Experiences',
-    subtitle: 'Across Sri Lanka',
-    description: 'Premium tours, private transfers, handpicked destinations and unforgettable journeys tailored for discerning travelers.'
-  });
+  const root = useRef<HTMLElement>(null), image = useRef<HTMLImageElement>(null), content = useRef<HTMLDivElement>(null), glow = useRef<HTMLDivElement>(null);
+  const [active, setActive] = useState(0);
+  const [data, setData] = useState({ title: "Luxury Travel Experiences", subtitle: "Across Sri Lanka", description: "Private journeys through an island that feels like many worlds." });
 
+  useEffect(() => { fetch(`${import.meta.env.VITE_API_URL}/api/hero`).then(r => r.json()).then(d => d.title && setData(d)).catch(console.error); }, []);
   useEffect(() => {
-    fetch(`${import.meta.env.VITE_API_URL}/api/hero`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.title) setHeroData(data);
-      })
-      .catch(err => console.error('Error fetching hero data:', err));
+    if (!root.current || !image.current) return;
+    const ctx = gsap.context(() => {
+      gsap.from(content.current, { opacity: 0, y: 55, duration: 1.2, ease: "power3.out" });
+      gsap.to(image.current, { yPercent: 14, scale: 1.12, ease: "none", scrollTrigger: { trigger: root.current, start: "top top", end: "bottom top", scrub: 1 } });
+    }, root);
+    return () => ctx.revert();
   }, []);
+  useEffect(() => { const timer = window.setInterval(() => change((active + 1) % scenes.length), 6500); return () => clearInterval(timer); }, [active]);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (bgRef.current && detailsRef.current) {
-        gsap.to(bgRef.current, {
-          scale: 1.3,
-          duration: 0.8,
-          ease: "power2.in"
-        });
-        gsap.to(detailsRef.current, {
-          opacity: 0,
-          y: -50,
-          duration: 0.5,
-          ease: "power2.in",
-          onComplete: () => {
-            const nextIndex = (currentImageIndex + 1) % images.length;
-            setCurrentImageIndex(nextIndex);
-            setImageDetails({ title: images[nextIndex].title, subtitle: images[nextIndex].subtitle });
-            gsap.fromTo(bgRef.current, 
-              { scale: 1.3, opacity: 0 },
-              { scale: 1, opacity: 1, duration: 1.5, ease: "power2.out" }
-            );
-            gsap.fromTo(detailsRef.current,
-              { opacity: 0, y: 50 },
-              { opacity: 1, y: 0, duration: 1, delay: 0.5, ease: "power2.out" }
-            );
-          }
-        });
-      }
-    }, 6000);
-
-    return () => clearInterval(interval);
-  }, [currentImageIndex]);
-
-  useEffect(() => {
-    if (!bgRef.current) return;
-
-    const scrollTween = gsap.to(bgRef.current, {
-      scale: 1.1,
-      ease: "none",
-      scrollTrigger: {
-        trigger: bgRef.current,
-        start: "top top",
-        end: "bottom top",
-        scrub: 1
-      }
-    });
-
-    return () => scrollTween.scrollTrigger?.kill();
-  }, []);
-  const selectSlide = (index: number) => {
-    if (!bgRef.current || !detailsRef.current || index === currentImageIndex) return;
-    gsap.to([bgRef.current, detailsRef.current], { opacity: 0, duration: 0.35, onComplete: () => {
-      setCurrentImageIndex(index);
-      setImageDetails({ title: images[index].title, subtitle: images[index].subtitle });
-      gsap.fromTo(bgRef.current, { scale: 1.12, opacity: 0 }, { scale: 1, opacity: 1, duration: 1.2, ease: 'power2.out' });
-      gsap.to(detailsRef.current, { opacity: 1, duration: 0.7, delay: 0.2 });
-    } });
+  const change = (index: number) => {
+    if (index === active || !image.current) return;
+    gsap.to(image.current, { opacity: 0, scale: 1.08, duration: .4, onComplete: () => { setActive(index); gsap.fromTo(image.current, { opacity: 0, scale: 1.12 }, { opacity: 1, scale: 1, duration: 1.35, ease: "power3.out" }); } });
+  };
+  const move = (e: React.PointerEvent<HTMLElement>) => {
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const x = e.clientX / innerWidth - .5, y = e.clientY / innerHeight - .5;
+    gsap.to(image.current, { x: x * 22, y: y * 14, duration: 1.4 });
+    gsap.to(glow.current, { x: x * -45, y: y * -35, duration: 1.7 });
   };
 
-  return <section id="home" className="relative isolate flex min-h-[760px] items-center overflow-hidden bg-slate-950 text-white lg:min-h-screen">
-    <img ref={bgRef} src={images[currentImageIndex].src} alt={imageDetails.title} className="absolute inset-0 h-[112%] w-full object-cover object-center" />
-    <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(2,7,17,.94)_0%,rgba(2,7,17,.76)_44%,rgba(2,7,17,.28)_78%,rgba(2,7,17,.5)_100%)]" />
-    <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(2,7,17,.35),transparent_35%,rgba(2,7,17,.88))]" />
-    <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_40%,rgba(8,145,178,.2),transparent_33%)]" />
-    <div className="pointer-events-none absolute inset-0 opacity-[.08] [background-image:linear-gradient(rgba(255,255,255,.35)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.35)_1px,transparent_1px)] [background-size:80px_80px]" />
+  return <section ref={root} id="home" onPointerMove={move} className="relative isolate min-h-[760px] overflow-hidden bg-[#03080d] text-white lg:min-h-screen">
+    <div className="absolute inset-[-3%] overflow-hidden"><img ref={image} src={scenes[active].src} alt={scenes[active].place} className="h-full w-full object-cover object-center will-change-transform" /></div>
+    <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(1,7,12,.94),rgba(1,7,12,.58)_52%,rgba(1,7,12,.15)_78%,rgba(1,7,12,.5))]" />
+    <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(1,7,12,.5),transparent_35%,rgba(1,7,12,.94))]" />
+    <div ref={glow} className="absolute left-[42%] top-[34%] h-72 w-72 rounded-full bg-cyan-300/15 blur-[110px]" />
+    <div className="absolute inset-y-0 left-[8%] hidden w-px bg-white/15 lg:block" /><div className="absolute inset-y-0 right-[8%] hidden w-px bg-white/15 lg:block" />
+    <div className="absolute left-[8%] top-1/2 hidden -translate-x-1/2 -translate-y-1/2 -rotate-90 text-[10px] font-bold uppercase tracking-[.45em] text-white/45 lg:block">Island of a thousand journeys</div>
 
-    <div className="relative z-10 mx-auto w-full max-w-7xl px-6 pb-44 pt-32 sm:px-8 md:pb-36 lg:px-10 lg:pt-40">
-      <div className="max-w-4xl">
-        <span className="inline-flex items-center gap-2 rounded-full border border-cyan-300/25 bg-cyan-300/10 px-4 py-2 text-[11px] font-bold uppercase tracking-[.2em] text-cyan-100 backdrop-blur"><ShieldCheck size={15} />Private journeys · Local expertise</span>
-        <h1 className="mt-6 text-4xl font-black leading-[1.03] tracking-[-.035em] sm:text-6xl lg:text-[78px]"><span className="block">{heroData.title}</span><span className="mt-2 block bg-gradient-to-r from-cyan-300 via-sky-400 to-blue-500 bg-clip-text text-transparent">{heroData.subtitle}</span></h1>
-        <p className="mt-6 max-w-2xl text-base leading-7 text-slate-300 sm:text-lg sm:leading-8">{heroData.description}</p>
-        <div className="mt-8 flex flex-col gap-3 sm:flex-row"><a href="#tours" className="group inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-400 to-blue-500 px-7 py-4 font-black text-slate-950 shadow-2xl shadow-cyan-950/50 transition hover:-translate-y-0.5 hover:brightness-110">Explore journeys <ArrowRight size={18} className="transition group-hover:translate-x-1" /></a><a href="#ai-planner" className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/10 px-7 py-4 font-bold text-white backdrop-blur transition hover:border-cyan-300/50 hover:bg-white/15"><MapPin size={18} />Build my journey</a></div>
-        <div className="mt-8 flex flex-wrap gap-x-6 gap-y-3 text-xs font-semibold text-slate-300">{['Private air-conditioned travel', 'Flexible itineraries', 'Human support'].map(item => <span key={item} className="flex items-center gap-2"><CheckCircle2 size={15} className="text-emerald-300" />{item}</span>)}</div>
+    <div className="relative z-10 mx-auto flex min-h-[760px] max-w-[1500px] items-center px-6 pb-36 pt-32 sm:px-10 lg:min-h-screen lg:px-[12%] lg:pb-40">
+      <div ref={content} className="max-w-5xl">
+        <div className="mb-6 flex items-center gap-3 text-[10px] font-bold uppercase tracking-[.32em] text-cyan-200 sm:text-xs"><span className="h-px w-10 bg-cyan-300" /><Sparkles size={14} /> Bespoke island expeditions</div>
+        <h1 className="max-w-5xl text-[clamp(3.2rem,8.4vw,8.3rem)] font-black leading-[.82] tracking-[-.065em]"><span className="block">Beyond</span><span className="block bg-gradient-to-r from-cyan-200 via-white to-amber-100 bg-clip-text pb-3 text-transparent">the ordinary.</span></h1>
+        <div className="mt-7 grid max-w-3xl gap-7 border-l border-cyan-300/50 pl-5 sm:grid-cols-[1fr_auto] sm:items-end sm:pl-7">
+          <div><p className="text-xs font-extrabold uppercase tracking-[.22em] text-cyan-300">{data.title} · {data.subtitle}</p><p className="mt-3 max-w-xl text-base leading-7 text-slate-200 sm:text-lg">{data.description}</p></div>
+          <a href="#ai-planner" className="group flex h-24 w-24 items-center justify-center rounded-full border border-white/30 bg-white/10 text-center text-[10px] font-black uppercase tracking-wider backdrop-blur-md transition duration-500 hover:scale-105 hover:border-cyan-300 hover:bg-cyan-300 hover:text-slate-950 sm:h-28 sm:w-28">Plan your<br />escape <ArrowUpRight size={17} className="ml-1 transition group-hover:rotate-45" /></a>
+        </div>
       </div>
     </div>
 
-    <div className="absolute inset-x-0 bottom-0 z-20 border-t border-white/10 bg-slate-950/55 backdrop-blur-xl"><div className="mx-auto flex max-w-7xl items-center justify-between gap-5 px-6 py-5 sm:px-8 lg:px-10"><div ref={detailsRef} className="min-w-0"><p className="text-[10px] font-bold uppercase tracking-[.22em] text-cyan-300">Now exploring · {imageDetails.subtitle}</p><h3 className="mt-1 truncate text-lg font-bold sm:text-xl">{imageDetails.title}</h3></div><div className="hidden items-center gap-3 md:flex"><div className="mr-3 flex items-center gap-2 text-xs text-slate-300"><Star size={15} className="fill-amber-300 text-amber-300" /><span>Tailor-made in Sri Lanka</span></div>{images.map((image, index) => <button key={image.title} type="button" onClick={() => selectSlide(index)} aria-label={`Show ${image.title}`} className={`relative h-14 w-20 overflow-hidden rounded-lg border transition ${currentImageIndex === index ? 'border-cyan-300 ring-2 ring-cyan-300/20' : 'border-white/15 opacity-60 hover:opacity-100'}`}><img src={image.src} alt="" className="h-full w-full object-cover" /></button>)}</div><div className="flex gap-1.5 md:hidden">{images.map((image, index) => <button key={image.title} type="button" onClick={() => selectSlide(index)} aria-label={`Show ${image.title}`} className={`h-2 rounded-full transition-all ${currentImageIndex === index ? 'w-7 bg-cyan-300' : 'w-2 bg-white/35'}`} />)}</div></div></div>
+    <div className="absolute bottom-0 inset-x-0 z-20 border-t border-white/10 bg-black/20 backdrop-blur-md"><div className="mx-auto grid max-w-[1500px] grid-cols-[1fr_auto] items-stretch px-6 sm:px-10 lg:grid-cols-[1fr_1.4fr_auto] lg:px-[8%]">
+      <div className="flex items-center gap-4 py-5 lg:py-6"><div className="relative flex h-12 w-12 items-center justify-center rounded-full border border-white/20"><Compass className="text-cyan-300" size={22} /><span className="absolute inset-1 animate-pulse rounded-full border border-cyan-300/20" /></div><div><p className="text-[9px] font-bold uppercase tracking-[.25em] text-white/45">Current chapter</p><p className="mt-1 font-bold">{scenes[active].place} <span className="font-normal text-white/50">— {scenes[active].label}</span></p></div></div>
+      <div className="hidden items-center justify-center gap-2 border-x border-white/10 px-8 lg:flex">{scenes.map((s, i) => <button key={s.place} onClick={() => change(i)} className={`group flex items-center gap-3 px-3 py-6 ${active === i ? "text-white" : "text-white/35 hover:text-white/70"}`}><span className="text-[10px] font-bold">{s.no}</span><span className={`h-px transition-all duration-500 ${active === i ? "w-14 bg-cyan-300" : "w-5 bg-white/30 group-hover:w-8"}`} /></button>)}</div>
+      <a href="#tours" className="flex items-center gap-3 py-5 pl-5 text-xs font-black uppercase tracking-[.18em] hover:text-cyan-300 lg:py-6 lg:pl-9">Explore <ArrowDown size={16} /></a>
+    </div></div>
+
+    <div className="absolute right-[5%] top-1/2 z-20 hidden -translate-y-1/2 xl:block"><div className="w-56 overflow-hidden rounded-[2rem] border border-white/20 bg-black/20 p-3 shadow-2xl backdrop-blur-xl"><img src={scenes[(active + 1) % scenes.length].src} alt="Next destination" className="h-28 w-full rounded-[1.35rem] object-cover" /><div className="flex items-center justify-between px-2 pb-2 pt-4"><div><p className="text-[9px] uppercase tracking-[.2em] text-white/45">Up next</p><p className="mt-1 text-sm font-bold">{scenes[(active + 1) % scenes.length].place}</p></div><MapPin size={18} className="text-cyan-300" /></div></div></div>
   </section>;
 }
