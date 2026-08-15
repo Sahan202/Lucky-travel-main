@@ -71,6 +71,6 @@ export default function Hero() {
       <a href="#tours" className="flex items-center gap-3 py-5 pl-5 text-xs font-black uppercase tracking-[.18em] hover:text-cyan-300 lg:py-6 lg:pl-9">Explore <ArrowDown size={16} /></a>
     </div></div>
 
-    <div className="absolute right-[5%] top-1/2 z-20 hidden -translate-y-1/2 xl:block"><div className="w-56 overflow-hidden rounded-[2rem] border border-white/20 bg-black/20 p-3 shadow-2xl backdrop-blur-xl"><img src={scenes[(active + 1) % scenes.length].src} alt="Next destination" className="h-28 w-full rounded-[1.35rem] object-cover" /><div className="flex items-center justify-between px-2 pb-2 pt-4"><div><p className="text-[9px] uppercase tracking-[.2em] text-white/45">Up next</p><p className="mt-1 text-sm font-bold">{scenes[(active + 1) % scenes.length].place}</p></div><MapPin size={18} className="text-cyan-300" /></div></div></div>
+    <div className="absolute right-[4%] top-[44%] z-20 hidden -translate-y-1/2 2xl:block"><div className="w-56 overflow-hidden rounded-[2rem] border border-white/20 bg-black/20 p-3 shadow-2xl backdrop-blur-xl"><img src={scenes[(active + 1) % scenes.length].src} alt="Next destination" className="h-28 w-full rounded-[1.35rem] object-cover" /><div className="flex items-center justify-between px-2 pb-2 pt-4"><div><p className="text-[9px] uppercase tracking-[.2em] text-white/45">Up next</p><p className="mt-1 text-sm font-bold">{scenes[(active + 1) % scenes.length].place}</p></div><MapPin size={18} className="text-cyan-300" /></div></div></div>
   </section>;
 }
