@@ -34,19 +34,27 @@ export default function AIActivityFinder({ destinations, selected, onToggle, onD
   }, [types]);
   useEffect(() => {
     if (!root.current || !background.current) return;
-    const ctx = gsap.context(() => {
-      gsap.from('.activity-reveal', { opacity: 0, y: 35, stagger: .1, duration: .8, ease: 'power3.out', scrollTrigger: { trigger: root.current, start: 'top 78%' } });
-      const timeline = gsap.timeline({ scrollTrigger: { trigger: root.current, start: 'top bottom', end: 'bottom top', scrub: 1.25 } });
-      timeline
-        .fromTo(background.current, { yPercent: -14, scale: 1.08 }, { yPercent: 22, scale: 1.21, ease: 'none' }, 0)
-        .fromTo('.activity-grid-layer', { yPercent: -8 }, { yPercent: 14, ease: 'none' }, 0)
-        .fromTo('.activity-orbit-one', { y: -70, rotate: -15 }, { y: 125, rotate: 30, ease: 'none' }, 0)
-        .fromTo('.activity-orbit-two', { y: 90, rotate: 18 }, { y: -130, rotate: -28, ease: 'none' }, 0)
-        .fromTo('.activity-heading-copy', { y: 38 }, { y: -36, ease: 'none' }, 0)
-        .fromTo('.activity-controls', { y: 75 }, { y: -22, ease: 'none' }, 0)
-        .fromTo('.activity-results', { y: 120 }, { y: -8, ease: 'none' }, 0);
-    }, root);
-    return () => ctx.revert();
+    const element = root.current;
+    const ctx = gsap.context(() => gsap.from('.activity-reveal', { opacity: 0, y: 35, stagger: .1, duration: .8, ease: 'power3.out', scrollTrigger: { trigger: element, start: 'top 78%' } }), element);
+    let frame = 0;
+    const renderParallax = () => {
+      frame = 0;
+      const rect = element.getBoundingClientRect();
+      const progress = Math.max(0, Math.min(1, (window.innerHeight - rect.top) / (window.innerHeight + rect.height)));
+      const set = (selector: string, values: gsap.TweenVars) => { const target = element.querySelector(selector); if (target) gsap.set(target, values); };
+      gsap.set(background.current, { yPercent: -14 + progress * 36, scale: 1.08 + progress * .13 });
+      set('.activity-grid-layer', { yPercent: -8 + progress * 22 });
+      set('.activity-orbit-one', { y: -70 + progress * 195, rotation: -15 + progress * 45 });
+      set('.activity-orbit-two', { y: 90 - progress * 220, rotation: 18 - progress * 46 });
+      set('.activity-heading-copy', { y: 38 - progress * 74 });
+      set('.activity-controls', { y: 75 - progress * 97 });
+      set('.activity-results', { y: 120 - progress * 128 });
+    };
+    const requestRender = () => { if (!frame) frame = requestAnimationFrame(renderParallax); };
+    requestRender();
+    window.addEventListener('scroll', requestRender, { passive: true });
+    window.addEventListener('resize', requestRender);
+    return () => { ctx.revert(); if (frame) cancelAnimationFrame(frame); window.removeEventListener('scroll', requestRender); window.removeEventListener('resize', requestRender); };
   }, []);
   useEffect(() => { ScrollTrigger.refresh(); }, [recommendations.length, loading]);
 
