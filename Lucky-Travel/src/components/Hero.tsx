@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { ArrowRight, CheckCircle2, MapPin, ShieldCheck, Star } from 'lucide-react';
 import Homebg from "../assets/matt-dany-ePAa2c9XbtE-unsplash.jpg";
 import Dalada from "../assets/dalada.jpg";
 import Budda from "../assets/buddh.jpg";
@@ -71,7 +72,7 @@ export default function Hero() {
   useEffect(() => {
     if (!bgRef.current) return;
 
-    gsap.to(bgRef.current, {
+    const scrollTween = gsap.to(bgRef.current, {
       scale: 1.1,
       ease: "none",
       scrollTrigger: {
@@ -82,102 +83,35 @@ export default function Hero() {
       }
     });
 
-    return () => {
-      ScrollTrigger.getAll().forEach(t => t.kill());
-    };
+    return () => scrollTween.scrollTrigger?.kill();
   }, []);
-  return (
-    <section id="home" className="relative h-screen flex items-center justify-center text-center overflow-hidden">
-      <img
-        ref={bgRef}
-        src={images[currentImageIndex].src}
-        alt="Hero background"
-        className="absolute w-full h-[120%] object-cover top-0 left-0"
-      />
-      <div className="absolute w-full h-full bg-gradient-to-r from-black/70 to-black/40" />
+  const selectSlide = (index: number) => {
+    if (!bgRef.current || !detailsRef.current || index === currentImageIndex) return;
+    gsap.to([bgRef.current, detailsRef.current], { opacity: 0, duration: 0.35, onComplete: () => {
+      setCurrentImageIndex(index);
+      setImageDetails({ title: images[index].title, subtitle: images[index].subtitle });
+      gsap.fromTo(bgRef.current, { scale: 1.12, opacity: 0 }, { scale: 1, opacity: 1, duration: 1.2, ease: 'power2.out' });
+      gsap.to(detailsRef.current, { opacity: 1, duration: 0.7, delay: 0.2 });
+    } });
+  };
 
-      {/* Image Details Overlay */}
-      <div ref={detailsRef} className="absolute bottom-24 sm:bottom-32 left-1/2 -translate-x-1/2 sm:left-8 sm:translate-x-0 z-20 text-white text-center sm:text-left">
-        <p className="text-[10px] sm:text-xs uppercase tracking-widest text-gray-300 mb-1">{imageDetails.subtitle}</p>
-        <h3 className="text-lg sm:text-3xl font-bold drop-shadow-2xl">{imageDetails.title}</h3>
-      </div>
+  return <section id="home" className="relative isolate flex min-h-[760px] items-center overflow-hidden bg-slate-950 text-white lg:min-h-screen">
+    <img ref={bgRef} src={images[currentImageIndex].src} alt={imageDetails.title} className="absolute inset-0 h-[112%] w-full object-cover object-center" />
+    <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(2,7,17,.94)_0%,rgba(2,7,17,.76)_44%,rgba(2,7,17,.28)_78%,rgba(2,7,17,.5)_100%)]" />
+    <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(2,7,17,.35),transparent_35%,rgba(2,7,17,.88))]" />
+    <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_40%,rgba(8,145,178,.2),transparent_33%)]" />
+    <div className="pointer-events-none absolute inset-0 opacity-[.08] [background-image:linear-gradient(rgba(255,255,255,.35)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.35)_1px,transparent_1px)] [background-size:80px_80px]" />
 
-      {/* Thumbnail Navigation */}
-      <div className="hidden md:flex absolute bottom-8 right-8 z-20 flex-col gap-3">
-        {images.map((img, index) => (
-          <button
-            key={index}
-            onClick={() => {
-              if (bgRef.current && detailsRef.current) {
-                gsap.to(bgRef.current, {
-                  scale: 1.3,
-                  duration: 0.6,
-                  ease: "power2.in"
-                });
-                gsap.to(detailsRef.current, {
-                  opacity: 0,
-                  y: -50,
-                  duration: 0.4,
-                  ease: "power2.in",
-                  onComplete: () => {
-                    setCurrentImageIndex(index);
-                    setImageDetails({ title: images[index].title, subtitle: images[index].subtitle });
-                    gsap.fromTo(bgRef.current,
-                      { scale: 1.3, opacity: 0 },
-                      { scale: 1, opacity: 1, duration: 1.2, ease: "power2.out" }
-                    );
-                    gsap.fromTo(detailsRef.current,
-                      { opacity: 0, y: 50 },
-                      { opacity: 1, y: 0, duration: 0.8, delay: 0.3, ease: "power2.out" }
-                    );
-                  }
-                });
-              }
-            }}
-            className={`w-20 h-20 rounded-lg overflow-hidden border-2 transition-all duration-300 ${
-              currentImageIndex === index
-                ? 'border-blue-500 scale-110 shadow-xl'
-                : 'border-white/30 hover:border-white/60 opacity-70 hover:opacity-100'
-            }`}
-          >
-            <img
-              src={img.src}
-              alt={img.title}
-              className="w-full h-full object-cover"
-            />
-          </button>
-        ))}
+    <div className="relative z-10 mx-auto w-full max-w-7xl px-6 pb-44 pt-32 sm:px-8 md:pb-36 lg:px-10 lg:pt-40">
+      <div className="max-w-4xl">
+        <span className="inline-flex items-center gap-2 rounded-full border border-cyan-300/25 bg-cyan-300/10 px-4 py-2 text-[11px] font-bold uppercase tracking-[.2em] text-cyan-100 backdrop-blur"><ShieldCheck size={15} />Private journeys · Local expertise</span>
+        <h1 className="mt-6 text-4xl font-black leading-[1.03] tracking-[-.035em] sm:text-6xl lg:text-[78px]"><span className="block">{heroData.title}</span><span className="mt-2 block bg-gradient-to-r from-cyan-300 via-sky-400 to-blue-500 bg-clip-text text-transparent">{heroData.subtitle}</span></h1>
+        <p className="mt-6 max-w-2xl text-base leading-7 text-slate-300 sm:text-lg sm:leading-8">{heroData.description}</p>
+        <div className="mt-8 flex flex-col gap-3 sm:flex-row"><a href="#tours" className="group inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-400 to-blue-500 px-7 py-4 font-black text-slate-950 shadow-2xl shadow-cyan-950/50 transition hover:-translate-y-0.5 hover:brightness-110">Explore journeys <ArrowRight size={18} className="transition group-hover:translate-x-1" /></a><a href="#ai-planner" className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/10 px-7 py-4 font-bold text-white backdrop-blur transition hover:border-cyan-300/50 hover:bg-white/15"><MapPin size={18} />Build my journey</a></div>
+        <div className="mt-8 flex flex-wrap gap-x-6 gap-y-3 text-xs font-semibold text-slate-300">{['Private air-conditioned travel', 'Flexible itineraries', 'Human support'].map(item => <span key={item} className="flex items-center gap-2"><CheckCircle2 size={15} className="text-emerald-300" />{item}</span>)}</div>
       </div>
+    </div>
 
-      <div className="relative z-10 text-white max-w-5xl px-4 sm:px-6">
-        <div className="mb-4 sm:mb-6">
-          <span className="inline-block px-3 py-1.5 sm:px-5 sm:py-2 bg-white/10 backdrop-blur-md border border-white/20 rounded-full text-xs sm:text-sm font-semibold tracking-wide uppercase">
-            Premium Travel Services
-          </span>
-        </div>
-        <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-4 sm:mb-6 md:mb-8 leading-tight tracking-tight">
-          <span className="block text-white">
-            {heroData.title}
-          </span>
-          <span className="block mt-1 sm:mt-2">
-            <span className="text-blue-400">{heroData.subtitle}</span>
-          </span>
-        </h1>
-        <p className="mb-8 sm:mb-10 md:mb-12 text-base sm:text-lg md:text-xl text-gray-200 max-w-3xl mx-auto leading-relaxed font-light">
-          {heroData.description}
-        </p>
-        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center">
-          <button className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 px-6 sm:px-8 py-3 sm:py-4 rounded-lg font-semibold text-base sm:text-lg shadow-xl hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300">
-            Explore Packages
-          </button>
-          <a href="tel:+94741105548" className="w-full sm:w-auto bg-white/10 backdrop-blur-sm border-2 border-white/30 hover:bg-white/20 px-6 sm:px-8 py-3 sm:py-4 rounded-lg font-semibold text-base sm:text-lg transition-all duration-300 flex items-center justify-center gap-2">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-            </svg>
-            <span>Contact Us</span>
-          </a>
-        </div>
-      </div>
-    </section>
-  );
+    <div className="absolute inset-x-0 bottom-0 z-20 border-t border-white/10 bg-slate-950/55 backdrop-blur-xl"><div className="mx-auto flex max-w-7xl items-center justify-between gap-5 px-6 py-5 sm:px-8 lg:px-10"><div ref={detailsRef} className="min-w-0"><p className="text-[10px] font-bold uppercase tracking-[.22em] text-cyan-300">Now exploring · {imageDetails.subtitle}</p><h3 className="mt-1 truncate text-lg font-bold sm:text-xl">{imageDetails.title}</h3></div><div className="hidden items-center gap-3 md:flex"><div className="mr-3 flex items-center gap-2 text-xs text-slate-300"><Star size={15} className="fill-amber-300 text-amber-300" /><span>Tailor-made in Sri Lanka</span></div>{images.map((image, index) => <button key={image.title} type="button" onClick={() => selectSlide(index)} aria-label={`Show ${image.title}`} className={`relative h-14 w-20 overflow-hidden rounded-lg border transition ${currentImageIndex === index ? 'border-cyan-300 ring-2 ring-cyan-300/20' : 'border-white/15 opacity-60 hover:opacity-100'}`}><img src={image.src} alt="" className="h-full w-full object-cover" /></button>)}</div><div className="flex gap-1.5 md:hidden">{images.map((image, index) => <button key={image.title} type="button" onClick={() => selectSlide(index)} aria-label={`Show ${image.title}`} className={`h-2 rounded-full transition-all ${currentImageIndex === index ? 'w-7 bg-cyan-300' : 'w-2 bg-white/35'}`} />)}</div></div></div>
+  </section>;
 }
