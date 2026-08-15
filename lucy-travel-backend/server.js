@@ -356,7 +356,7 @@ app.post('/api/gallery/upload', verifyToken, upload.single('image'), async (req,
 
     const result = await new Promise((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(
-        { upload_preset: 'imageeee' },
+        { folder: 'lucky-travel' },
         (error, result) => {
           if (error) reject(error);
           else resolve(result);
@@ -383,7 +383,7 @@ app.post('/api/upload/image', verifyToken, upload.single('image'), async (req, r
 
     const result = await new Promise((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(
-        { upload_preset: 'imageeee' },
+        { folder: 'lucky-travel' },
         (error, result) => {
           if (error) reject(error);
           else resolve(result);
