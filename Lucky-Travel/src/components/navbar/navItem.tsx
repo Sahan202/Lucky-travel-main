@@ -37,13 +37,13 @@ export default function TourismNavbar() {
 
   return <nav aria-label="Primary navigation" className={`fixed inset-x-0 z-50 px-3 transition-all duration-500 sm:px-5 ${scrolled ? "top-2" : "top-3 sm:top-5"}`}>
     <div className={`relative mx-auto transition-all duration-500 ${scrolled ? "max-w-6xl" : "max-w-[1320px]"}`}>
-      <div className={`relative flex items-center justify-between overflow-hidden rounded-[1.4rem] border px-3 shadow-[0_18px_70px_rgba(0,0,0,.3)] transition-all duration-500 sm:px-4 ${scrolled ? "h-[62px] bg-[#02080d]/88 backdrop-blur-2xl" : "h-[70px] bg-[#02080d]/58 backdrop-blur-xl"} ${active === "home" ? "border-transparent" : "border-white/15"}`}>
-        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(110deg,rgba(34,211,238,.08),transparent_28%,transparent_72%,rgba(37,99,235,.08))]" />
-        <div className="pointer-events-none absolute inset-x-12 top-0 h-px bg-gradient-to-r from-transparent via-cyan-300/55 to-transparent" />
+      <div className={`relative flex items-center justify-between overflow-hidden rounded-[1.4rem] border px-3 transition-all duration-500 sm:px-4 ${scrolled ? "h-[62px]" : "h-[70px]"} ${active === "home" ? "border-transparent bg-transparent shadow-none backdrop-blur-none" : "border-white/15 bg-[#02080d]/88 shadow-[0_18px_70px_rgba(0,0,0,.3)] backdrop-blur-2xl"}`}>
+        <div className={`pointer-events-none absolute inset-0 bg-[linear-gradient(110deg,rgba(34,211,238,.08),transparent_28%,transparent_72%,rgba(37,99,235,.08))] transition-opacity duration-500 ${active === "home" ? "opacity-0" : "opacity-100"}`} />
+        <div className={`pointer-events-none absolute inset-x-12 top-0 h-px bg-gradient-to-r from-transparent via-cyan-300/55 to-transparent transition-opacity duration-500 ${active === "home" ? "opacity-0" : "opacity-100"}`} />
 
         <a href="#home" className="group relative z-10 flex shrink-0 items-center gap-3" onClick={() => setOpen(false)}>
           <span className="relative flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/95 p-1 shadow-lg"><img src={Logo} alt="Lucky Travel" className="h-full w-full rounded-full object-contain transition duration-500 group-hover:rotate-6 group-hover:scale-105" /><span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full border-2 border-[#061018] bg-emerald-400" /></span>
-          <span className="hidden sm:block"><span className="block text-base font-black leading-none tracking-[-.02em] text-white">Lucky Travel</span><span className="mt-1.5 flex items-center gap-1.5 text-[7px] font-bold uppercase tracking-[.25em] text-cyan-200/70"><Sparkles size={9} /> Sri Lanka, privately</span></span>
+          <span className="block"><span className="block text-sm font-black leading-none tracking-[-.02em] text-white sm:text-base">Lucky Travel</span><span className="mt-1.5 hidden items-center gap-1.5 text-[7px] font-bold uppercase tracking-[.25em] text-cyan-200/70 sm:flex"><Sparkles size={9} /> Sri Lanka, privately</span></span>
         </a>
 
         <div className="relative z-10 hidden items-center rounded-full border border-white/10 bg-black/20 p-1.5 lg:flex">
