@@ -69,8 +69,9 @@ export default function Testimonial() {
   };
 
   return <section ref={root} onPointerMove={pointerMove} className="relative isolate overflow-hidden bg-[#02080d] py-24 text-white sm:py-32">
-    <img ref={background} src={scene?.url || bgImage} onLoad={() => gsap.fromTo(background.current, { opacity: .04, scale: 1.08 }, { opacity: .32, scale: 1, duration: 1.5, ease: "power3.out" })} onError={event => { event.currentTarget.onerror = null; event.currentTarget.src = bgImage; }} referrerPolicy="no-referrer" alt={`${sceneTitles[sceneIndex]} landscape`} className="absolute inset-[-3%] h-[106%] w-[106%] object-cover will-change-transform" />
-    <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(2,8,13,.98),rgba(2,8,13,.82)_55%,rgba(2,8,13,.68))]" />
+    <img ref={background} src={scene?.url || bgImage} onLoad={() => gsap.fromTo(background.current, { opacity: .08, scale: 1.08 }, { opacity: .55, scale: 1, duration: 1.5, ease: "power3.out" })} onError={event => { event.currentTarget.onerror = null; event.currentTarget.src = bgImage; }} referrerPolicy="no-referrer" alt={`${sceneTitles[sceneIndex]} landscape`} className="absolute inset-[-3%] h-[106%] w-[106%] object-cover will-change-transform" />
+    <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(2,8,13,.88),rgba(2,8,13,.62)_55%,rgba(2,8,13,.44))]" />
+    <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(2,8,13,.28),transparent_38%,rgba(2,8,13,.62))]" />
     <div className="absolute inset-0 opacity-20 [background-image:linear-gradient(rgba(255,255,255,.06)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.06)_1px,transparent_1px)] [background-size:80px_80px]" />
     <div ref={glow} className="absolute -right-24 top-1/2 h-96 w-96 -translate-y-1/2 rounded-full bg-cyan-300/15 blur-[130px]" />
 
