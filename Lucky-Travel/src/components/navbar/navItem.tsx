@@ -37,7 +37,7 @@ export default function TourismNavbar() {
 
   return <nav aria-label="Primary navigation" className={`fixed inset-x-0 z-50 px-3 transition-all duration-500 sm:px-5 ${scrolled ? "top-2" : "top-3 sm:top-5"}`}>
     <div className={`relative mx-auto transition-all duration-500 ${scrolled ? "max-w-6xl" : "max-w-[1320px]"}`}>
-      <div className={`relative flex items-center justify-between overflow-hidden rounded-[1.4rem] border px-3 shadow-[0_18px_70px_rgba(0,0,0,.3)] transition-all duration-500 sm:px-4 ${scrolled ? "h-[62px] border-white/15 bg-[#02080d]/88 backdrop-blur-2xl" : "h-[70px] border-white/10 bg-[#02080d]/58 backdrop-blur-xl"}`}>
+      <div className={`relative flex items-center justify-between overflow-hidden rounded-[1.4rem] border px-3 shadow-[0_18px_70px_rgba(0,0,0,.3)] transition-all duration-500 sm:px-4 ${scrolled ? "h-[62px] bg-[#02080d]/88 backdrop-blur-2xl" : "h-[70px] bg-[#02080d]/58 backdrop-blur-xl"} ${active === "home" ? "border-transparent" : "border-white/15"}`}>
         <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(110deg,rgba(34,211,238,.08),transparent_28%,transparent_72%,rgba(37,99,235,.08))]" />
         <div className="pointer-events-none absolute inset-x-12 top-0 h-px bg-gradient-to-r from-transparent via-cyan-300/55 to-transparent" />
 
